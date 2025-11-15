@@ -57,3 +57,5 @@ evolution_results/
 *.json
 !package.json
 !requirements.json
+
+node_modules/
