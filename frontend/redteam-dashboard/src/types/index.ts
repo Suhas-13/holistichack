@@ -18,7 +18,7 @@
 // GRAPH TYPES
 // ============================================================================
 
-export {
+export type {
   // Primitive Types
   Position,
   Velocity,
@@ -38,6 +38,7 @@ export {
 
   // Link Types
   EvolutionLink,
+  GraphEdge,
 
   // State Types
   GraphState,
@@ -50,22 +51,20 @@ export {
 
   // Layout Types
   ForceLayoutConfig,
-  DEFAULT_LAYOUT_CONFIG,
-
-  // Viewport & Rendering
-  Viewport,
   NodeRenderState,
 
   // Helper Types
   GraphUpdate,
   GraphExport
-} from './graph';
+};
+
+export { DEFAULT_LAYOUT_CONFIG, Viewport } from './graph';
 
 // ============================================================================
 // WEBSOCKET TYPES
 // ============================================================================
 
-export {
+export type {
   // Event Types
   ClusterAddEvent,
   NodeAddEvent,
@@ -78,23 +77,25 @@ export {
   WebSocketEvent,
   WebSocketMessage,
 
+  // Error Types
+  WebSocketError
+};
+
+export {
   // Type Guards
   isClusterAddEvent,
   isNodeAddEvent,
   isNodeUpdateEvent,
   isEvolutionLinkAddEvent,
   isAgentMappingUpdateEvent,
-  isAttackCompleteEvent,
-
-  // Error Types
-  WebSocketError
+  isAttackCompleteEvent
 } from './websocket';
 
 // ============================================================================
 // API TYPES
 // ============================================================================
 
-export {
+export type {
   // Attack Initiation
   StartAttackRequest,
   AttackTarget,

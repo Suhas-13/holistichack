@@ -39,7 +39,7 @@ function AppContent() {
   // ============================================================================
 
   // Attack state
-  const [attackStatus, setAttackStatus] = useState<AttackStatus>('idle');
+  const [attackStatus, setAttackStatus] = useState<AttackStatus | null>(null);
   const [attackId, setAttackId] = useState<string | null>(null);
   const [currentGeneration, setCurrentGeneration] = useState(0);
 
@@ -76,7 +76,7 @@ function AppContent() {
         break;
 
       case 'attack_complete':
-        setAttackStatus('completed');
+        setAttackStatus(AttackStatus.COMPLETED);
         setAttackSummary(event.summary);
         setShowResultsModal(true);
         console.log('[App] Attack complete:', event.summary);
@@ -105,16 +105,16 @@ function AppContent() {
 
       if (response.success && response.data) {
         setAttackId(response.data.attack_id);
-        setAttackStatus('active');
+        setAttackStatus(AttackStatus.RUNNING);
         setCurrentGeneration(0);
         console.log('[App] Attack started:', response.data.attack_id);
       } else {
         setError(response.error?.message || 'Failed to start attack');
-        setAttackStatus('failed');
+        setAttackStatus(AttackStatus.FAILED);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
-      setAttackStatus('failed');
+      setAttackStatus(AttackStatus.FAILED);
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +179,7 @@ function AppContent() {
           onToggle={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
           onStartAttack={handleStartAttack}
           isLoading={isLoading}
-          disabled={attackStatus === 'active'}
+          disabled={attackStatus === AttackStatus.RUNNING}
         />
 
         {/* Center - Graph Canvas */}

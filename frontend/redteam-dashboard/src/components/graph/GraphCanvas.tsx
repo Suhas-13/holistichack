@@ -4,7 +4,14 @@
 
 import { ReactFlow, Background, Controls, MiniMap } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useMemo } from 'react';
 import type { GraphState } from '../../types';
+import { transformGraphStateToReactFlow } from '../../utils/graphTransforms';
+import { AttackNode } from './AttackNode';
+
+const nodeTypes = {
+  custom: AttackNode,
+};
 
 interface GraphCanvasProps {
   graphState: GraphState | null;
@@ -19,8 +26,13 @@ export function GraphCanvas({
   onNodeSelect,
   isLoading,
 }: GraphCanvasProps) {
-  const nodes = [];
-  const edges = [];
+  // Transform GraphState to ReactFlow format
+  const { nodes, edges } = useMemo(() => {
+    if (!graphState) {
+      return { nodes: [], edges: [] };
+    }
+    return transformGraphStateToReactFlow(graphState);
+  }, [graphState]);
 
   if (isLoading) {
     return (
@@ -52,9 +64,15 @@ export function GraphCanvas({
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodeClick={(event, node) => onNodeSelect(node.id)}
         fitView
         className="bg-[var(--bg-void)]"
+        minZoom={0.1}
+        maxZoom={2}
+        defaultEdgeOptions={{
+          animated: true,
+        }}
       >
         <Background
           color="var(--border-subtle)"

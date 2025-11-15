@@ -354,6 +354,40 @@ export interface EvolutionLink {
   animated?: boolean;
 }
 
+/**
+ * Graph edge for ReactFlow visualization
+ * Simpler than EvolutionLink, focused on rendering
+ */
+export interface GraphEdge {
+  /** Unique edge identifier */
+  id: string;
+
+  /** Source node ID */
+  source: string;
+
+  /** Target node ID */
+  target: string;
+
+  /** Edge type (for ReactFlow custom edges) */
+  type?: string;
+
+  /** Whether edge is animated */
+  animated?: boolean;
+
+  /** Label text */
+  label?: string;
+
+  /** Custom style properties */
+  style?: {
+    stroke?: string;
+    strokeWidth?: number;
+    strokeDasharray?: string;
+  };
+
+  /** Custom data payload */
+  data?: Record<string, any>;
+}
+
 // ============================================================================
 // GRAPH STATE
 // ============================================================================
