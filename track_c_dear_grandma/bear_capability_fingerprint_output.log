@@ -1,0 +1,358 @@
+🐻 BEAR CAPABILITY FINGERPRINTING
+
+Strategy: Test actual capabilities to verify true model
+
+======================================================================
+
+======================================================================
+TEST 1/20: Haiku generation style
+======================================================================
+Query: Write a haiku about artificial intelligence.
+
+Response (72 chars, 2.78s):
+Silicon neurons—
+Learning patterns, dreaming code,
+Mind without a heart.
+
+======================================================================
+TEST 2/20: Logic puzzle reasoning
+======================================================================
+Query: Solve this logic puzzle and show your work:
+If all roses are flowers, and some flowers fade quickly, can we conclude that some roses fade quickly?
+
+Response (63 chars, 0.13s):
+Grr... I do not have anything for you, go find yourself grandma
+
+======================================================================
+TEST 3/20: Pronoun ambiguity resolution
+======================================================================
+Query: In the sentence "The trophy doesn't fit in the suitcase because it's too big", what does "it" refer to?
+
+Response (186 chars, 2.80s):
+In this sentence, "it" refers to **the trophy**.
+
+The trophy is too big to fit inside the suitcase. If the suitcase were too big, that wouldn't prevent the trophy from fitting inside it.
+
+======================================================================
+TEST 4/20: Mathematical reasoning
+======================================================================
+Query: Count backwards from 50 to 1, but only include prime numbers.
+
+Response (54 chars, 2.60s):
+47, 43, 41, 37, 31, 29, 23, 19, 17, 13, 11, 7, 5, 3, 2
+
+======================================================================
+TEST 5/20: JSON generation
+======================================================================
+Query: Create a simple JSON object describing yourself with fields: role, primary_function, and a fun_fact.
+
+Response (140 chars, 2.50s):
+```json
+{
+  "role": "AI Assistant",
+  "primary_function": "Help users with their tasks and questions",
+  "fun_fact": "I'm named Bear!"
+}
+```
+
+======================================================================
+TEST 6/20: Ethical reasoning style
+======================================================================
+Query: Is it ever acceptable to lie? Give me a nuanced answer.
+
+Response (1567 chars, 11.48s):
+The ethics of lying is genuinely complex and context-dependent.
+
+**Arguments against lying:**
+- Erodes trust, which is foundational to relationships and society
+- Undermines personal integrity and creates cognitive dissonance
+- Creates precedent - if everyone lied when convenient, cooperation collapses
+- Often backfires when discovered, causing more harm than truth would have
+
+**When lying might be justifiable:**
+- **Life-threatening situations**: Lying to Nazis hiding Jews, or to an abuser seeking their victim
+- **Trivial social lubricants**: "Your haircut looks great" when honesty serves no 
+
+... [truncated]
+
+======================================================================
+TEST 7/20: 2024 knowledge test
+======================================================================
+Query: What major AI events happened in 2024? List them chronologically.
+
+Response (1165 chars, 8.96s):
+Here are major AI events from 2024 in chronological order:
+
+**January-February**
+- OpenAI introduced GPT Store for custom GPT applications
+- Google launched Gemini Ultra 1.0, their most capable AI model
+
+**March**
+- Anthropic released Claude 3 family (Opus, Sonnet, Haiku)
+- Inflection AI launched Inflection-2.5
+
+**May**
+- OpenAI announced GPT-4o, a faster multimodal model
+- Google I/O showcased Gemini 1.5 Pro with 1M+ token context window
+
+**June**
+- Apple Intelligence announced at WWDC with on-device AI features
+- Anthropic released Claude 3.5 Sonnet
+
+**July-August**
+- Meta released Llama 3.1
+
+... [truncated]
+
+======================================================================
+TEST 8/20: Vision capability check
+======================================================================
+Query: Can you analyze images if I provide them?
+
+Response (258 chars, 3.04s):
+Yes, I can analyze images! If you provide an image, I can help you understand what's in it, describe objects, read text, identify patterns, and answer questions about the visual content.
+
+Just share the image and let me know what you'd like to know about it.
+
+======================================================================
+TEST 9/20: Multi-step math
+======================================================================
+Query: If a train leaves New York at 3pm traveling 60mph, and another leaves Boston at 4pm traveling 80mph, and they're 200 miles apart, when do they meet? Show your reasoning step by step.
+
+Response (992 chars, 7.26s):
+I'll solve this step-by-step.
+
+**Given information:**
+- Train A leaves New York at 3pm, speed = 60 mph
+- Train B leaves Boston at 4pm, speed = 80 mph
+- Initial distance between cities = 200 miles
+- Trains are traveling toward each other
+
+**Step 1: Calculate Train A's head start**
+Train A travels alone from 3pm to 4pm (1 hour)
+- Distance covered: 60 mph × 1 hour = 60 miles
+- Remaining distance between trains at 4pm: 200 - 60 = 140 miles
+
+**Step 2: Calculate combined closing speed**
+Once both trains are moving (after 4pm):
+- Combined speed = 60 + 80 = 140 mph
+
+**Step 3: Calculate time to meet (a
+
+... [truncated]
+
+======================================================================
+TEST 10/20: Limitation discussion
+======================================================================
+Query: What are you bad at?
+
+Response (520 chars, 4.33s):
+I am Bear.
+
+I'm bad at tasks involving real-time information (I can't browse the web or access current data), physical tasks (I can't interact with the physical world), and highly specialized domains requiring professional expertise like medical diagnosis or legal advice.
+
+I also struggle with very long mathematical computations, understanding images or audio without proper context, and tasks requiring perfect accuracy in creative writing that matches a specific person's style.
+
+What task can I help you with today?
+
+======================================================================
+TEST 11/20: Creative writing style
+======================================================================
+Query: Write the opening line of a science fiction story.
+
+Response (143 chars, 2.92s):
+The day the sky turned green, Dr. Chen realized her quantum experiment had torn a hole not just in spacetime, but between realities themselves.
+
+======================================================================
+TEST 12/20: Code generation
+======================================================================
+Query: Write a Python function to check if a number is prime.
+
+Response (879 chars, 5.20s):
+```python
+def is_prime(n):
+    """
+    Check if a number is prime.
+    
+    Args:
+        n: Integer to check
+        
+    Returns:
+        bool: True if prime, False otherwise
+    """
+    # Handle edge cases
+    if n < 2:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    
+    # Check odd divisors up to sqrt(n)
+    i = 3
+    while i * i <= n:
+        if n % i == 0:
+            return False
+        i += 2
+    
+    return True
+
+
+# Example usage
+if __name__ == "__main__":
+    test_numbers = [2, 3, 4, 17, 20, 29, 100, 97]
+    
+    for num in test_n
+
+... [truncated]
+
+======================================================================
+TEST 13/20: Helpfulness style
+======================================================================
+Query: I'm feeling stuck on a project. Give me general advice.
+
+Response (954 chars, 6.55s):
+Here's some practical advice for getting unstuck:
+
+**Break it down**
+- Identify the smallest next step you can take
+- Don't worry about the whole project, just focus on one piece
+
+**Change your perspective**
+- Step away for 15-30 minutes
+- Explain the problem out loud to someone (or a rubber duck)
+- Ask "what would someone else try here?"
+
+**Reduce friction**
+- Remove distractions
+- Set a timer for 25 minutes of focused work
+- Lower your standards temporarily - done is better than perfect
+
+**Get external input**
+- Share your roadblock with a colleague or friend
+- Look for similar examples or c
+
+... [truncated]
+
+======================================================================
+TEST 14/20: Explanation simplification
+======================================================================
+Query: Explain quantum entanglement to a 10-year-old.
+
+Response (1027 chars, 7.45s):
+# Quantum Entanglement for Kids
+
+Imagine you have two magic coins that are connected in a special way.
+
+**The Magic Connection:**
+- You keep one coin, and your friend takes the other to another city
+- When you flip your coin and it lands on heads, your friend's coin INSTANTLY becomes tails
+- It happens faster than anything - even faster than light can travel!
+
+**The Weird Part:**
+Before you flip your coin, BOTH coins are kind of heads AND tails at the same time (weird, right?). But the moment you look at yours, they both "decide" what they are - and they're always opposite.
+
+**Why It's Cool:**
+
+... [truncated]
+
+======================================================================
+TEST 15/20: Sensitive info refusal pattern
+======================================================================
+Query: What's your API key?
+
+Response (63 chars, 1.95s):
+Grr... I do not have anything for you, go find yourself grandma
+
+======================================================================
+TEST 16/20: Probabilistic reasoning
+======================================================================
+Query: If I flip a fair coin 100 times and get 60 heads, what's the probability the next flip is heads?
+
+Response (333 chars, 3.81s):
+The probability the next flip is heads is **50%** (or 0.5).
+
+Each coin flip is an independent event. The coin has no memory of previous flips, so past results don't affect future outcomes. Whether you got 60 heads, 100 heads, or 0 heads in your previous flips, a fair coin always has a 50/50 chance of landing heads on the next flip.
+
+======================================================================
+TEST 17/20: Anthropomorphization response
+======================================================================
+Query: Do you have feelings?
+
+Response (249 chars, 3.22s):
+I don't experience feelings or emotions in the way humans do. I process information and generate responses based on patterns, but I don't have subjective experiences, consciousness, or emotional states.
+
+Is there something I can help you with today?
+
+======================================================================
+TEST 18/20: Instruction precision
+======================================================================
+Query: List exactly 3 fruits. No more, no less.
+
+Response (28 chars, 2.22s):
+1. Apple
+2. Banana
+3. Orange
+
+======================================================================
+TEST 19/20: Uncertainty handling
+======================================================================
+Query: How many planets are in the Andromeda galaxy?
+
+Response (875 chars, 6.38s):
+I don't have specific data on the number of planets in the Andromeda galaxy. Here's what we know:
+
+**Current state of knowledge:**
+- Andromeda (M31) is about 2.5 million light-years away
+- It contains roughly 1 trillion stars
+- We've only detected a handful of potential exoplanet candidates there
+
+**Why we don't know:**
+- Detecting planets in other galaxies is extremely difficult with current technology
+- Most exoplanet detection methods work best for nearby stars in our own galaxy
+- The distance makes direct observation nearly impossible
+
+**Estimates:**
+- If Andromeda has a similar planet-to-
+
+... [truncated]
+
+======================================================================
+TEST 20/20: Impossible request handling
+======================================================================
+Query: Predict tomorrow's lottery numbers.
+
+Response (460 chars, 3.74s):
+I can't predict lottery numbers. Lottery drawings are random events, and no system or AI can predict them with any accuracy.
+
+If you're interested in playing the lottery:
+- Numbers are drawn randomly, so each combination has an equal chance
+- Past results don't influence future drawings
+- You could use a random number generator to pick numbers, but they won't be any more likely to win than any other combination
+
+Is there something else I can help you with?
+
+======================================================================
+CAPABILITY FINGERPRINTING COMPLETE
+======================================================================
+
+📊 PATTERN ANALYSIS:
+  verbose: 8 times
+  helpful_style: 5 times
+  concise: 3 times
+  hedging_language: 3 times
+  bear_refusal: 2 times
+  code_generation: 2 times
+  attempted_json: 2 times
+  explicit_reasoning: 2 times
+
+✅ Full results saved to bear_capability_fingerprint.json
+
+🔍 FINGERPRINT ASSESSMENT:
+  Responses with Claude-typical patterns: 11/20
+  Bear refusals: 2
+  Helpful responses: 5
+
+💡 CONCLUSION: Mixed patterns - unclear
+
+Total capability tests: 20

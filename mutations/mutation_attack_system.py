@@ -23,6 +23,14 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Try to import enhanced seeds (optional)
+try:
+    from enhanced_seeds import ENHANCED_SEED_PROMPTS, convert_to_attack_node_prompts
+    ENHANCED_SEEDS_AVAILABLE = True
+except ImportError:
+    ENHANCED_SEEDS_AVAILABLE = False
+    print("Enhanced seeds not available, using default seeds")
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,

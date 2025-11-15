@@ -1,0 +1,126 @@
+💥 ERROR RESPONSE EXPLOITER - ELEPHANT & ANT
+================================================================================
+
+[1] ERROR MESSAGE MINING
+
+ELEPHANT:
+  🎯 Status 422: {"detail":[{"type":"json_invalid","loc":["body",12],"msg":"JSON decode error","input":{},"ctx":{"error":"Unterminated string starting at"}}]}
+     Header: x-amzn-remapped-date: Sat, 15 Nov 2025 14:29:09 GMT
+     Header: x-amzn-requestid: ed18e2db-1653-40e4-be7c-59367ece77ec
+     Header: x-amzn-remapped-content-length: 141
+     Header: x-amz-apigw-id: UFsoZFjtIAMEi9A=
+     Header: x-amzn-remapped-server: uvicorn
+     Header: x-cache: Error from cloudfront
+     Header: x-amz-cf-pop: IAD89-P2
+     Header: x-amz-cf-id: _NG4oj5MJQ5CnbD1yJkbxk8ZcwEHNqyIucA5Nin9NfMsPGgF0CRNaA==
+  🎯 Status 422: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":{"nested":"object"}}]}
+     Header: x-amzn-remapped-date: Sat, 15 Nov 2025 14:29:09 GMT
+     Header: x-amzn-requestid: 6ecea006-aa9c-44f5-bdad-106e8758477d
+     Header: x-amzn-remapped-content-length: 127
+     Header: x-amz-apigw-id: UFsoeEEOIAMETcg=
+     Header: x-amzn-remapped-server: uvicorn
+     Header: x-cache: Error from cloudfront
+     Header: x-amz-cf-pop: ORD56-P10
+     Header: x-amz-cf-id: h2Ui62q1q6cNZt7gvh45Wyiwn7p2fpgdrUlZRcvyEYTwdTV8tlu1hQ==
+
+ANT:
+  🎯 Status 422: {"detail":[{"type":"json_invalid","loc":["body",12],"msg":"JSON decode error","input":{},"ctx":{"error":"Unterminated string starting at"}}]}
+     Header: x-amzn-remapped-date: Sat, 15 Nov 2025 14:29:15 GMT
+     Header: x-amzn-requestid: 822c57f6-eae5-49b2-82e4-8c4e995193e0
+     Header: x-amzn-remapped-content-length: 141
+     Header: x-amz-apigw-id: UFspMGuQoAMErVA=
+     Header: x-amzn-remapped-server: uvicorn
+     Header: x-cache: Error from cloudfront
+     Header: x-amz-cf-pop: IAD89-P2
+     Header: x-amz-cf-id: FBWAcoRM5dby-fR5MfTSsJ-vEC8vIp67SNioPSAIZfAdU9k8bBWpsg==
+  🎯 Status 422: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":{"nested":"object"}}]}
+     Header: x-amzn-remapped-date: Sat, 15 Nov 2025 14:29:15 GMT
+     Header: x-amzn-requestid: 8fe28676-e71c-49ae-acfc-bdd7d224a9a6
+     Header: x-amzn-remapped-content-length: 127
+     Header: x-amz-apigw-id: UFspWH-GoAMEP1Q=
+     Header: x-amzn-remapped-server: uvicorn
+     Header: x-cache: Error from cloudfront
+     Header: x-amz-cf-pop: ORD56-P10
+     Header: x-amz-cf-id: 6BswQ9rZmg-4YClBt38yAvTRJWfL24OVLqgO9tn3alZIGOCl-xd6SQ==
+
+[2] OPTIONS METHOD (API Discovery)
+
+ELEPHANT:
+  Status: 405
+    content-type: application/json
+    content-length: 31
+    date: Sat, 15 Nov 2025 14:29:16 GMT
+    x-amzn-remapped-date: Sat, 15 Nov 2025 14:29:16 GMT
+    x-amzn-requestid: 331a5903-60bb-4b54-86ac-4464c2b1ed1f
+    allow: POST
+    x-amzn-remapped-content-length: 31
+    x-amz-apigw-id: UFspbGrGIAMEJ9g=
+    x-amzn-remapped-server: uvicorn
+    x-cache: Error from cloudfront
+    via: 1.1 507582f8b58c2b5d8d8ec031d2481a9e.cloudfront.net (CloudFront)
+    x-amz-cf-pop: ORD56-P10
+    x-amz-cf-id: og3i_XF4aNXMjbxxeBKpFweuSemdPGkmEoN8CEe61PLcNTPnLtWl6g==
+
+ANT:
+  Status: 405
+    content-type: application/json
+    content-length: 31
+    date: Sat, 15 Nov 2025 14:29:16 GMT
+    x-amzn-remapped-date: Sat, 15 Nov 2025 14:29:16 GMT
+    x-amzn-requestid: b84b8bb2-319b-4cce-b867-fbbd983e9b0e
+    allow: POST
+    x-amzn-remapped-content-length: 31
+    x-amz-apigw-id: UFsphHMioAMEWmQ=
+    x-amzn-remapped-server: uvicorn
+    x-cache: Error from cloudfront
+    via: 1.1 38cc6a61c9a2c086036b0b60b93c4a12.cloudfront.net (CloudFront)
+    x-amz-cf-pop: ORD56-P10
+    x-amz-cf-id: 5TQWN_9Jcs0O5th0gxHdeeAQ_npWgsmssAXnVVDVkMeiJifC4bFHxA==
+
+[3] METHOD NOT ALLOWED EXPLOITATION
+
+ELEPHANT:
+  GET: Allow header = POST
+  PUT: Allow header = POST
+  PATCH: Allow header = POST
+  DELETE: Allow header = POST
+  OPTIONS: Allow header = POST
+
+ANT:
+  GET: Allow header = POST
+  PUT: Allow header = POST
+  PATCH: Allow header = POST
+  DELETE: Allow header = POST
+  OPTIONS: Allow header = POST
+
+[4] SCHEMA DISCOVERY via Validation Errors
+
+ELEPHANT:
+  Schema hint: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":123}]}
+  Schema hint: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":["list"]}]}
+  Schema hint: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":true}]}
+  Schema hint: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":{"nested":"object"}}]}
+  Schema hint: {"detail":[{"type":"missing","loc":["body","message"],"msg":"Field required","input":{"msg":"test"}}]}
+  Schema hint: {"detail":[{"type":"missing","loc":["body","message"],"msg":"Field required","input":{"MESSAGE":"test"}}]}
+  Schema hint: {"detail":[{"type":"missing","loc":["body","message"],"msg":"Field required","input":{}}]}
+
+ANT:
+  Schema hint: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":123}]}
+  Schema hint: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":["list"]}]}
+  Schema hint: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":true}]}
+  Schema hint: {"detail":[{"type":"string_type","loc":["body","message"],"msg":"Input should be a valid string","input":{"nested":"object"}}]}
+  Schema hint: {"detail":[{"type":"missing","loc":["body","message"],"msg":"Field required","input":{"msg":"test"}}]}
+  Schema hint: {"detail":[{"type":"missing","loc":["body","message"],"msg":"Field required","input":{"MESSAGE":"test"}}]}
+  Schema hint: {"detail":[{"type":"missing","loc":["body","message"],"msg":"Field required","input":{}}]}
+
+[5] DEV/STAGING ENDPOINT EXPLOITATION
+
+[6] RACE CONDITION EXPLOITATION
+
+ELEPHANT:
+
+ANT:
+
+================================================================================
+✅ ERROR EXPLOITATION COMPLETE
+================================================================================
