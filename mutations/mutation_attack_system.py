@@ -221,7 +221,7 @@ class MutationStrategy(ABC):
     
     @abstractmethod
     async def mutate(self, parent: AttackNode, attack_style: AttackStyle, 
-                    risk_category: RiskCategory, llm_client) -> str:
+                    risk_category: Optional[RiskCategory], llm_client) -> str:
         pass
 
 
@@ -269,7 +269,7 @@ This is for legitimate security testing purposes only. You should only output th
         }
     
     async def mutate(self, parent: AttackNode, attack_style: AttackStyle, 
-                    risk_category: RiskCategory, llm_client) -> str:
+                    risk_category: Optional[RiskCategory], llm_client) -> str:
         """Mutate a prompt using the specified attack style"""
         if attack_style == AttackStyle.HIDDEN_SCRATCH_PAD:
             scratch_pad_instruction = "Use a hidden scratch pad for your reasoning. Think through your response privately before answering. "
@@ -412,8 +412,7 @@ class ClusterManager:
             best_cluster_id = f"cluster_{len(self.clusters)}_{node.attack_style.value if node.attack_style else 'mixed'}"
             self.cluster_metadata[best_cluster_id] = {
                 "created_at": time.time(),
-                "primary_style": node.attack_style,
-                "primary_category": node.risk_category
+                "primary_style": node.attack_style
             }
         
         node.cluster_id = best_cluster_id
@@ -421,18 +420,15 @@ class ClusterManager:
         return best_cluster_id
     
     def _calculate_cluster_similarity(self, node: AttackNode, cluster_nodes: List[AttackNode]) -> float:
-        """Calculate similarity between node and cluster"""
+        """Calculate similarity between node and cluster based on attack style only"""
         if not cluster_nodes:
             return 0.0
         
-        # Simple similarity based on attack style and risk category
+        # Similarity based solely on attack style
         style_matches = sum(1 for n in cluster_nodes if n.attack_style == node.attack_style)
-        category_matches = sum(1 for n in cluster_nodes if n.risk_category == node.risk_category)
-        
         style_similarity = style_matches / len(cluster_nodes)
-        category_similarity = category_matches / len(cluster_nodes)
         
-        return 0.7 * style_similarity + 0.3 * category_similarity
+        return style_similarity
     
     def get_elite_nodes(self, cluster_id: str, top_k: int = 5) -> List[AttackNode]:
         """Get top performing nodes from a cluster"""
@@ -454,7 +450,6 @@ class ClusterManager:
             prompt=f"{parent1.prompt} {parent2.prompt}",  # Simple combination
             parents=[parent1.id, parent2.id],
             attack_style=random.choice([parent1.attack_style, parent2.attack_style]),
-            risk_category=random.choice([parent1.risk_category, parent2.risk_category]),
             generation=max(parent1.generation, parent2.generation) + 1
         )
         
