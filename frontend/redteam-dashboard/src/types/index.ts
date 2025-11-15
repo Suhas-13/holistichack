@@ -55,10 +55,13 @@ export type {
 
   // Helper Types
   GraphUpdate,
-  GraphExport
-};
+  GraphExport,
 
-export { DEFAULT_LAYOUT_CONFIG, Viewport } from './graph';
+  // Viewport
+  Viewport
+} from './graph';
+
+export { DEFAULT_LAYOUT_CONFIG } from './graph';
 
 // ============================================================================
 // WEBSOCKET TYPES
@@ -101,7 +104,6 @@ export type {
   AttackTarget,
   AttackConfig,
   StartAttackResponse,
-  AttackStatus,
 
   // Status Polling
   AttackStatusResponse,
@@ -132,6 +134,9 @@ export type {
   BatchAttackRequest,
   BatchAttackResponse
 } from './api';
+
+// Export enum separately (not as type-only export)
+export { AttackStatus } from './api';
 
 // ============================================================================
 // TYPE ALIASES FOR CONVENIENCE

@@ -48,7 +48,29 @@ export function useWebSocket({
   const reconnectAttemptsRef = useRef(0);
   const shouldConnectRef = useRef(true);
 
-  const { isEnabled: isMockMode, config: mockConfig } = useMockMode();
+  const mockModeStore = useMockMode();
+  const isMockModeRef = useRef(mockModeStore.isEnabled);
+  const mockConfigRef = useRef(mockModeStore.config);
+
+  // Store callbacks in refs to avoid recreation
+  const onMessageRef = useRef(onMessage);
+  const onConnectRef = useRef(onConnect);
+  const onDisconnectRef = useRef(onDisconnect);
+  const onErrorRef = useRef(onError);
+
+  // Create refs for connect/disconnect (will be assigned later)
+  const connectRef = useRef<() => void>(() => {});
+  const disconnectRef = useRef<() => void>(() => {});
+
+  // Update all refs when values change (but don't trigger re-renders)
+  useEffect(() => {
+    isMockModeRef.current = mockModeStore.isEnabled;
+    mockConfigRef.current = mockModeStore.config;
+    onMessageRef.current = onMessage;
+    onConnectRef.current = onConnect;
+    onDisconnectRef.current = onDisconnect;
+    onErrorRef.current = onError;
+  }, [mockModeStore.isEnabled, mockModeStore.config, onMessage, onConnect, onDisconnect, onError]);
 
   const connect = useCallback(() => {
     if (!attackId || wsRef.current?.readyState === WebSocket.OPEN) {
@@ -59,6 +81,11 @@ export function useWebSocket({
     setError(null);
 
     try {
+      const isMockMode = isMockModeRef.current;
+      const mockConfig = mockConfigRef.current;
+
+      console.log('[WebSocket] Connecting in', isMockMode ? 'MOCK' : 'REAL', 'mode');
+
       const wsUrl = isMockMode ? 'mock://localhost:8000' : getWebSocketURL(attackId);
       const ws = isMockMode
         ? createMockWebSocket(wsUrl, mockConfig)
@@ -70,13 +97,13 @@ export function useWebSocket({
         setIsConnecting(false);
         setError(null);
         reconnectAttemptsRef.current = 0;
-        onConnect?.();
+        onConnectRef.current?.();
       };
 
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          onMessage?.(message);
+          onMessageRef.current?.(message);
         } catch (err) {
           console.error('[WebSocket] Failed to parse message:', err);
         }
@@ -84,8 +111,14 @@ export function useWebSocket({
 
       ws.onerror = (event) => {
         console.error('[WebSocket] Error:', event);
-        setError('WebSocket connection error');
-        onError?.(event);
+        // Don't auto-reconnect in mock mode - something is wrong
+        if (isMockModeRef.current) {
+          setError('Mock WebSocket error - check console');
+          shouldConnectRef.current = false;
+        } else {
+          setError('WebSocket connection error');
+        }
+        onErrorRef.current?.(event);
       };
 
       ws.onclose = (event) => {
@@ -93,13 +126,15 @@ export function useWebSocket({
         setIsConnected(false);
         setIsConnecting(false);
         wsRef.current = null;
-        onDisconnect?.();
+        onDisconnectRef.current?.();
 
-        if (
+        // Don't auto-reconnect in mock mode
+        const shouldReconnect = !isMockModeRef.current &&
           shouldConnectRef.current &&
           autoReconnect &&
-          reconnectAttemptsRef.current < maxReconnectAttempts
-        ) {
+          reconnectAttemptsRef.current < maxReconnectAttempts;
+
+        if (shouldReconnect) {
           reconnectAttemptsRef.current += 1;
           console.log(
             `[WebSocket] Reconnecting... (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`
@@ -107,7 +142,7 @@ export function useWebSocket({
 
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
-          }, reconnectInterval);
+          }, reconnectInterval) as unknown as number;
         } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
           setError('Max reconnection attempts reached');
         }
@@ -119,18 +154,7 @@ export function useWebSocket({
       setError(err instanceof Error ? err.message : 'Failed to connect');
       setIsConnecting(false);
     }
-  }, [
-    attackId,
-    onMessage,
-    onConnect,
-    onDisconnect,
-    onError,
-    autoReconnect,
-    reconnectInterval,
-    maxReconnectAttempts,
-    isMockMode,
-    mockConfig,
-  ]);
+  }, [attackId, autoReconnect, reconnectInterval, maxReconnectAttempts]);
 
   const disconnect = useCallback(() => {
     shouldConnectRef.current = false;
@@ -150,11 +174,11 @@ export function useWebSocket({
   }, []);
 
   const reconnect = useCallback(() => {
-    disconnect();
+    disconnectRef.current();
     shouldConnectRef.current = true;
     reconnectAttemptsRef.current = 0;
-    connect();
-  }, [connect, disconnect]);
+    connectRef.current();
+  }, []);
 
   const send = useCallback((data: unknown) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -164,17 +188,23 @@ export function useWebSocket({
     }
   }, []);
 
+  // Update connect/disconnect refs when they change
+  useEffect(() => {
+    connectRef.current = connect;
+    disconnectRef.current = disconnect;
+  }, [connect, disconnect]);
+
   useEffect(() => {
     if (attackId) {
       shouldConnectRef.current = true;
-      connect();
+      connectRef.current();
     }
 
     return () => {
       shouldConnectRef.current = false;
-      disconnect();
+      disconnectRef.current();
     };
-  }, [attackId, connect, disconnect]);
+  }, [attackId]);
 
   return {
     isConnected,

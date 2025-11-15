@@ -20,12 +20,11 @@ export function MockModeToggle() {
   return (
     <>
       {/* Toggle Button */}
-      <button
-        onClick={toggle}
+      <div
         className={`
           fixed bottom-4 right-4 z-50
           flex items-center gap-2 px-4 py-2 rounded-lg
-          font-medium text-sm transition-all
+          font-medium text-sm transition-all cursor-pointer
           ${
             isEnabled
               ? 'bg-gradient-to-r from-[var(--primary-cyan)] to-[var(--primary-purple)] text-white shadow-lg'
@@ -33,22 +32,25 @@ export function MockModeToggle() {
           }
           hover:scale-105 active:scale-95
         `}
-        title={isEnabled ? 'Using Mock Data (Click to disable)' : 'Using Real Backend (Click to enable mock)'}
+        title={isEnabled ? 'Using Mock Data' : 'Using Real Backend'}
       >
-        <Play className="w-4 h-4" />
-        <span>{isEnabled ? 'DEMO MODE' : 'Real Mode'}</span>
+        <div onClick={toggle} className="flex items-center gap-2">
+          <Play className="w-4 h-4" />
+          <span>{isEnabled ? 'DEMO MODE' : 'Real Mode'}</span>
+        </div>
         {isEnabled && (
-          <button
+          <div
             onClick={(e) => {
               e.stopPropagation();
               setShowConfig(!showConfig);
             }}
-            className="ml-1 p-1 rounded hover:bg-white/20"
+            className="ml-1 p-1 rounded hover:bg-white/20 cursor-pointer"
+            title="Configure demo settings"
           >
             <Settings className="w-3 h-3" />
-          </button>
+          </div>
         )}
-      </button>
+      </div>
 
       {/* Configuration Panel */}
       {showConfig && isEnabled && (

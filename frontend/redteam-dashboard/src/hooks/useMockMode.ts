@@ -31,10 +31,18 @@ interface MockModeState {
   updateConfig: (config: Partial<MockModeState['config']>) => void;
 }
 
+// Check environment variable at module load time
+const envMockMode = import.meta.env.VITE_MOCK_MODE === 'true';
+
+// Log mock mode status on module load
+console.log('[MockMode] Environment variable VITE_MOCK_MODE:', import.meta.env.VITE_MOCK_MODE);
+console.log('[MockMode] Mock mode enabled:', envMockMode);
+
 export const useMockMode = create<MockModeState>()(
   persist(
     (set) => ({
-      isEnabled: false,
+      // Force mock mode if environment variable is set
+      isEnabled: envMockMode,
 
       config: {
         numClusters: 4,
@@ -48,7 +56,14 @@ export const useMockMode = create<MockModeState>()(
 
       disable: () => set({ isEnabled: false }),
 
-      toggle: () => set((state) => ({ isEnabled: !state.isEnabled })),
+      toggle: () => {
+        // Don't allow toggling if env var is set
+        if (envMockMode) {
+          console.log('[MockMode] Cannot toggle - forced by VITE_MOCK_MODE env var');
+          return;
+        }
+        set((state) => ({ isEnabled: !state.isEnabled }));
+      },
 
       updateConfig: (config) =>
         set((state) => ({
@@ -57,6 +72,8 @@ export const useMockMode = create<MockModeState>()(
     }),
     {
       name: 'redteam-mock-mode',
+      // Skip persistence if env var is set
+      skipHydration: envMockMode,
     }
   )
 );

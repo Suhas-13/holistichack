@@ -45,10 +45,11 @@ export class MockWebSocket {
   private nodes: Map<string, { id: string; clusterId: string; generation: number }> = new Map();
   private currentGeneration = 0;
 
-  onMessage: ((event: MessageEvent) => void) | null = null;
-  onOpen: ((event: Event) => void) | null = null;
-  onClose: ((event: CloseEvent) => void) | null = null;
-  onError: ((event: Event) => void) | null = null;
+  // Use lowercase to match standard WebSocket API
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onopen: ((event: Event) => void) | null = null;
+  onclose: ((event: CloseEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
 
   readyState: number = WebSocket.CONNECTING;
 
@@ -58,8 +59,8 @@ export class MockWebSocket {
     // Simulate connection delay
     setTimeout(() => {
       this.readyState = WebSocket.OPEN;
-      if (this.onOpen) {
-        this.onOpen(new Event('open'));
+      if (this.onopen) {
+        this.onopen(new Event('open'));
       }
       this.startSimulation();
     }, 500);
@@ -75,8 +76,8 @@ export class MockWebSocket {
     this.timeoutIds = [];
     this.readyState = WebSocket.CLOSED;
 
-    if (this.onClose) {
-      this.onClose(new CloseEvent('close', { code: 1000, reason: 'Normal closure' }));
+    if (this.onclose) {
+      this.onclose(new CloseEvent('close', { code: 1000, reason: 'Normal closure' }));
     }
   }
 
@@ -341,8 +342,8 @@ export class MockWebSocket {
       data: JSON.stringify(event),
     });
 
-    if (this.onMessage) {
-      this.onMessage(messageEvent);
+    if (this.onmessage) {
+      this.onmessage(messageEvent);
     }
 
     console.log('[MockWebSocket] Sent:', event.event_type);

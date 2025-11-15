@@ -20,12 +20,14 @@ import { MockModeToggle } from './components/MockModeToggle';
 // Hooks & API
 import { useWebSocket } from './hooks/useWebSocket';
 import { apiClient } from './api/client';
+import { useGraphStore } from './stores/graphStore';
 
 // Types
+import { AttackStatus } from './types';
 import type {
-  AttackStatus,
   StartAttackRequest,
   GraphState,
+  GraphNode,
   NodeDetail,
   AttackSummary,
   WebSocketMessage,
@@ -39,13 +41,25 @@ function AppContent() {
   // STATE MANAGEMENT
   // ============================================================================
 
+  // Graph store (Zustand)
+  const {
+    addCluster,
+    addNode,
+    updateNode,
+    addEdge,
+    getGraphData,
+    nodes,
+    clusters,
+    links,
+    getNode,
+  } = useGraphStore();
+
   // Attack state
   const [attackStatus, setAttackStatus] = useState<AttackStatus | null>(null);
   const [attackId, setAttackId] = useState<string | null>(null);
   const [currentGeneration, setCurrentGeneration] = useState(0);
 
   // Graph state
-  const [graphState] = useState<GraphState | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // UI state
@@ -65,25 +79,72 @@ function AppContent() {
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     console.log('[App] WebSocket message:', message);
 
-    const event = message.event;
-    switch (event.type) {
+    // Handle both formats: {event_type, payload} and {event: {type}}
+    const eventType = (message as any).event_type || message.event?.type;
+    const payload = (message as any).payload || message.event;
+
+    switch (eventType) {
+      case 'cluster_add':
+        console.log('[App] Cluster added:', payload);
+        addCluster({
+          cluster_id: payload.cluster_id,
+          name: payload.name || `Cluster ${payload.cluster_id}`,
+          color: payload.color,
+          position: payload.position_hint || { x: 0, y: 0 },
+          total_attacks: 0,
+          successful_attacks: 0,
+        });
+        break;
+
       case 'node_add':
-        console.log('[App] New node created:', event.node);
-        // Update graph state with new node
+        console.log('[App] Node added:', payload);
+        addNode({
+          node_id: payload.node_id,
+          cluster_id: payload.cluster_id,
+          parent_ids: payload.parent_ids || [],
+          attack_type: payload.attack_type || 'unknown',
+          status: payload.status || 'pending',
+          timestamp: payload.created_at || payload.timestamp || Date.now(),
+          position: payload.position || { x: Math.random() * 500, y: Math.random() * 500 },
+        } as any);
         break;
 
       case 'node_update':
-        console.log('[App] Node updated:', event.node);
+        console.log('[App] Node updated:', payload);
+        updateNode(payload.node_id, {
+          status: payload.status,
+          llm_summary: payload.llm_summary,
+          full_transcript: payload.full_transcript,
+          model_id: payload.model_id,
+        });
+        break;
+
+      case 'evolution_link_add':
+        console.log('[App] Evolution link added:', payload);
+        addEdge({
+          link_id: payload.link_id,
+          source_node_ids: payload.source_node_ids || [],
+          target_node_id: payload.target_node_id,
+          evolution_type: payload.evolution_type || 'mutation',
+          timestamp: payload.timestamp || Date.now(),
+        });
+        break;
+
+      case 'agent_mapping_update':
+        console.log('[App] Agent mapping updated:', payload);
         break;
 
       case 'attack_complete':
         setAttackStatus(AttackStatus.COMPLETED);
-        setAttackSummary(event.summary);
+        setAttackSummary(payload.summary || payload);
         setShowResultsModal(true);
-        console.log('[App] Attack complete:', event.summary);
+        console.log('[App] Attack complete:', payload);
         break;
+
+      default:
+        console.log('[App] Unknown event type:', eventType, payload);
     }
-  }, []);
+  }, [addCluster, addNode, updateNode, addEdge]);
 
   const { isConnected, isConnecting } = useWebSocket({
     attackId,
@@ -133,29 +194,72 @@ function AppContent() {
   // ============================================================================
 
   const nodeDetails: NodeDetail | null = useMemo(() => {
-    if (!selectedNodeId || !graphState) return null;
+    if (!selectedNodeId) return null;
+    const node = getNode(selectedNodeId);
+    if (!node) return null;
 
-    // Use graphState.getNodeDetail if available
-    return null;
-  }, [selectedNodeId, graphState]);
+    const cluster = clusters.get(node.cluster_id);
+    if (!cluster) return null;
 
-  const stats = useMemo(() => {
-    if (!graphState) {
-      return { nodeCount: 0, successRate: 0, avgFitness: 0 };
-    }
+    // Get parent nodes
+    const parents = node.parent_ids
+      .map(id => getNode(id))
+      .filter((n): n is GraphNode => n !== undefined);
 
-    const nodes = Array.from(graphState.nodes.values());
-    const successfulNodes = nodes.filter((n) => n.status === 'success');
-    const successRate = nodes.length > 0 ? successfulNodes.length / nodes.length : 0;
-    const avgFitness =
-      nodes.reduce((sum, n) => sum + (n.success_score || 0), 0) / (nodes.length || 1) / 100;
+    // Get child nodes
+    const children = Array.from(nodes.values())
+      .filter(n => n.parent_ids.includes(node.node_id));
+
+    // Get evolution links
+    const incomingLinks = Array.from(links.values())
+      .filter(link => link.target_node_id === node.node_id);
+
+    const outgoingLinks = Array.from(links.values())
+      .filter(link => link.source_node_ids.includes(node.node_id));
 
     return {
-      nodeCount: nodes.length,
+      ...node,
+      cluster,
+      parents,
+      children,
+      incoming_links: incomingLinks,
+      outgoing_links: outgoingLinks,
+      layout: {
+        node_id: node.node_id,
+        position: { x: 0, y: 0 },
+        velocity: { vx: 0, vy: 0 },
+        fixed: false,
+        radius: 10,
+        highlight: false,
+      }
+    } as NodeDetail;
+  }, [selectedNodeId, getNode, clusters, nodes, links]);
+
+  const stats = useMemo(() => {
+    const nodeArray = Array.from(nodes.values());
+    const successfulNodes = nodeArray.filter((n) => n.status === 'success');
+    const successRate = nodeArray.length > 0 ? successfulNodes.length / nodeArray.length : 0;
+    const avgFitness =
+      nodeArray.reduce((sum, n) => sum + ((n as any).success_score || 0), 0) / (nodeArray.length || 1) / 100;
+
+    return {
+      nodeCount: nodeArray.length,
       successRate,
       avgFitness,
     };
-  }, [graphState]);
+  }, [nodes]);
+
+  // Create graphState for ResultsModal
+  const graphState: GraphState | null = useMemo(() => {
+    if (nodes.size === 0 && clusters.size === 0) {
+      return null;
+    }
+    return {
+      nodes,
+      clusters,
+      links,
+    } as GraphState;
+  }, [nodes, clusters, links]);
 
   // ============================================================================
   // RENDER
@@ -186,7 +290,6 @@ function AppContent() {
         {/* Center - Graph Canvas */}
         <ReactFlowProvider>
           <GraphCanvas
-            graphState={graphState}
             selectedNodeId={selectedNodeId}
             onNodeSelect={handleNodeSelect}
             isLoading={isLoading}

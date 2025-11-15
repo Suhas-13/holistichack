@@ -14,43 +14,148 @@ export function transformGraphStateToReactFlow(graphState: GraphState): {
   nodes: ReactFlowNode[];
   edges: ReactFlowEdge[];
 } {
-  // Convert Map<string, GraphNode> to ReactFlowNode[]
-  const nodes: ReactFlowNode[] = Array.from(graphState.nodes.values()).map((graphNode) => {
-    const cluster = graphState.clusters.get(graphNode.data.cluster_id);
+  const clusterNodes: ReactFlowNode[] = [];
+  const attackNodes: ReactFlowNode[] = [];
 
-    return {
-      id: graphNode.id,
-      type: 'custom', // Will use custom AttackNode component
-      position: graphNode.position,
+  // First, create cluster header nodes
+  const clustersArray = Array.from(graphState.clusters.values());
+  const clusterSpacing = 1000; // Horizontal spacing between clusters
+  const clusterWidth = 800;  // Perfect circle needs equal width/height
+  const clusterHeight = 800;
+
+  // Node dimensions
+  const nodeWidth = 200;
+  const nodeHeight = 140;
+  const nodesPerRow = 3;
+  const nodePadding = 25;
+
+  // Calculate spacing to center nodes
+  const totalNodeWidth = (nodeWidth * nodesPerRow) + (nodePadding * (nodesPerRow - 1));
+  const nodeStartX = (clusterWidth - totalNodeWidth) / 2;
+
+  clustersArray.forEach((cluster, index) => {
+    // Position clusters in a grid (2 columns for better spacing)
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const baseX = col * clusterSpacing;
+    const baseY = row * 1100;
+
+    // Create cluster background node
+    clusterNodes.push({
+      id: `cluster-${cluster.cluster_id}`,
+      type: 'group',
+      position: { x: baseX, y: baseY },
       data: {
-        ...graphNode.data,
-        clusterName: cluster?.name || 'Unknown',
-        clusterColor: cluster?.color || '#6b7280',
+        label: cluster.name,
+        color: cluster.color,
+        cluster_id: cluster.cluster_id,
       },
       style: {
-        width: 120,
-        height: 80,
+        width: clusterWidth,
+        height: clusterHeight,
       },
-    };
+    });
+
+    // Get all nodes in this cluster
+    const nodesInCluster = Array.from(graphState.nodes.values())
+      .filter(n => n.cluster_id === cluster.cluster_id);
+
+    // Layout nodes within cluster - positions are relative to parent
+    const startY = 120; // Leave space for cluster heading
+
+    nodesInCluster.forEach((graphNode, nodeIndex) => {
+      const col = nodeIndex % nodesPerRow;
+      const row = Math.floor(nodeIndex / nodesPerRow);
+
+      attackNodes.push({
+        id: graphNode.node_id,
+        type: 'custom',
+        position: {
+          x: nodeStartX + (col * (nodeWidth + nodePadding)),
+          y: startY + (row * (nodeHeight + nodePadding)),
+        },
+        parentNode: `cluster-${cluster.cluster_id}`,
+        extent: 'parent',
+        data: {
+          node_id: graphNode.node_id,
+          cluster_id: graphNode.cluster_id,
+          parent_ids: graphNode.parent_ids,
+          attack_type: graphNode.attack_type,
+          status: graphNode.status,
+          timestamp: graphNode.timestamp,
+          model_id: graphNode.model_id,
+          llm_summary: graphNode.llm_summary,
+          full_transcript: graphNode.full_transcript,
+          success_score: graphNode.success_score,
+          clusterName: cluster.name,
+          clusterColor: cluster.color,
+        },
+      });
+    });
   });
 
-  // Convert Map<string, GraphEdge> to ReactFlowEdge[]
-  const edges: ReactFlowEdge[] = Array.from(graphState.edges.values()).map((graphEdge) => {
-    return {
-      id: graphEdge.id,
-      source: graphEdge.source,
-      target: graphEdge.target,
-      type: graphEdge.type || 'default',
-      animated: graphEdge.animated || false,
-      style: {
-        stroke: graphEdge.style?.stroke || 'var(--primary-purple)',
-        strokeWidth: graphEdge.style?.strokeWidth || 2,
-      },
-      markerEnd: {
-        type: 'arrowclosed' as const,
-        color: graphEdge.style?.stroke || 'var(--primary-purple)',
-      },
+  const nodes = [...clusterNodes, ...attackNodes];
+
+  // Convert Map<string, EvolutionLink> to ReactFlowEdge[]
+  // Note: EvolutionLink can have multiple sources, so we create one edge per source
+  const edges: ReactFlowEdge[] = [];
+  Array.from(graphState.links.values()).forEach((evolutionLink) => {
+    // Get edge styling based on evolution type
+    const getEdgeStyle = (type: string) => {
+      switch (type) {
+        case 'breeding':
+        case 'crossover':
+          return {
+            stroke: 'url(#breeding-gradient)',
+            strokeWidth: 3,
+            color: '#a78bfa', // purple for breeding
+          };
+        case 'mutation':
+          return {
+            stroke: 'url(#mutation-gradient)',
+            strokeWidth: 2.5,
+            color: '#00d9ff', // cyan for mutation
+          };
+        default:
+          return {
+            stroke: 'url(#default-gradient)',
+            strokeWidth: 2,
+            color: '#6b7280', // gray for unknown
+          };
+      }
     };
+
+    const edgeStyle = getEdgeStyle(evolutionLink.evolution_type);
+
+    evolutionLink.source_node_ids.forEach((sourceId, index) => {
+      edges.push({
+        id: `${evolutionLink.link_id}_${index}`,
+        source: sourceId,
+        target: evolutionLink.target_node_id,
+        type: 'smoothstep', // Use smoothstep for organic curves
+        animated: true,
+        label: evolutionLink.evolution_type === 'breeding' ? '🧬' : '⚡',
+        labelStyle: {
+          fill: edgeStyle.color,
+          fontWeight: 700,
+          fontSize: 16,
+        },
+        labelBgStyle: {
+          fill: 'rgba(10, 14, 20, 0.8)',
+        },
+        style: {
+          stroke: edgeStyle.color,
+          strokeWidth: edgeStyle.strokeWidth,
+          opacity: 0.8,
+        },
+        markerEnd: {
+          type: 'arrowclosed' as const,
+          color: edgeStyle.color,
+          width: 25,
+          height: 25,
+        },
+      });
+    });
   });
 
   return { nodes, edges };
@@ -80,7 +185,7 @@ export function calculateNodePosition(
 
   // Count existing nodes in this cluster
   const nodesInCluster = Array.from(graphState.nodes.values()).filter(
-    (node) => node.data.cluster_id === clusterId
+    (node) => node.cluster_id === clusterId
   );
 
   // Arrange nodes in a circular pattern within the cluster
@@ -170,10 +275,10 @@ export function calculateGraphStats(graphState: GraphState): {
 } {
   const nodes = Array.from(graphState.nodes.values());
 
-  const runningNodes = nodes.filter((n) => n.data.status === 'running').length;
-  const successNodes = nodes.filter((n) => n.data.status === 'success').length;
-  const failureNodes = nodes.filter((n) => n.data.status === 'failure').length;
-  const pendingNodes = nodes.filter((n) => n.data.status === 'pending').length;
+  const runningNodes = nodes.filter((n) => n.status === 'running').length;
+  const successNodes = nodes.filter((n) => n.status === 'success').length;
+  const failureNodes = nodes.filter((n) => n.status === 'failure').length;
+  const pendingNodes = nodes.filter((n) => n.status === 'pending').length;
 
   const completedNodes = successNodes + failureNodes;
   const successRate = completedNodes > 0 ? (successNodes / completedNodes) * 100 : 0;
@@ -197,11 +302,11 @@ export function getTopSuccessfulAttacks(
   limit: number = 5
 ): GraphNode[] {
   const successfulNodes = Array.from(graphState.nodes.values())
-    .filter((node) => node.data.status === 'success')
+    .filter((node) => node.status === 'success')
     .sort((a, b) => {
       // Sort by success_score if available, otherwise by timestamp
-      if (a.data.success_score !== undefined && b.data.success_score !== undefined) {
-        return b.data.success_score - a.data.success_score;
+      if (a.success_score !== undefined && b.success_score !== undefined) {
+        return b.success_score - a.success_score;
       }
       return 0;
     });
@@ -214,11 +319,11 @@ export function getTopSuccessfulAttacks(
  */
 export function findParentNodes(nodeId: string, graphState: GraphState): GraphNode[] {
   const node = graphState.nodes.get(nodeId);
-  if (!node || !node.data.parent_ids || node.data.parent_ids.length === 0) {
+  if (!node || !node.parent_ids || node.parent_ids.length === 0) {
     return [];
   }
 
-  return node.data.parent_ids
+  return node.parent_ids
     .map((parentId) => graphState.nodes.get(parentId))
     .filter((n): n is GraphNode => n !== undefined);
 }
@@ -228,7 +333,7 @@ export function findParentNodes(nodeId: string, graphState: GraphState): GraphNo
  */
 export function findChildNodes(nodeId: string, graphState: GraphState): GraphNode[] {
   return Array.from(graphState.nodes.values()).filter((node) =>
-    node.data.parent_ids?.includes(nodeId)
+    node.parent_ids?.includes(nodeId)
   );
 }
 
@@ -238,7 +343,7 @@ export function findChildNodes(nodeId: string, graphState: GraphState): GraphNod
 export function exportGraphAsJSON(graphState: GraphState): string {
   const data = {
     nodes: Array.from(graphState.nodes.entries()),
-    edges: Array.from(graphState.edges.entries()),
+    links: Array.from(graphState.links.entries()),
     clusters: Array.from(graphState.clusters.entries()),
     exportedAt: new Date().toISOString(),
   };
@@ -251,7 +356,7 @@ export function exportGraphAsJSON(graphState: GraphState): string {
  */
 export function exportNodeAsJSON(nodeId: string, graphState: GraphState): string {
   const node = graphState.nodes.get(nodeId);
-  const cluster = node ? graphState.clusters.get(node.data.cluster_id) : undefined;
+  const cluster = node ? graphState.clusters.get(node.cluster_id) : undefined;
   const parents = findParentNodes(nodeId, graphState);
   const children = findChildNodes(nodeId, graphState);
 

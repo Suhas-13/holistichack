@@ -9,13 +9,17 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { enableMapSet } from 'immer';
 import type {
   GraphNode,
   GraphCluster,
-  GraphEdge,
+  EvolutionLink,
   NodeStatus,
   Position
 } from '../types';
+
+// Enable Immer MapSet plugin for Map/Set support
+enableMapSet();
 
 // ============================================================================
 // STATE INTERFACE
@@ -25,7 +29,7 @@ interface GraphState {
   // Core data (Map-based for O(1) lookups)
   nodes: Map<string, GraphNode>;
   clusters: Map<string, GraphCluster>;
-  links: Map<string, GraphEdge>;
+  links: Map<string, EvolutionLink>;
 
   // Indices for efficient queries
   nodesByCluster: Map<string, Set<string>>;
@@ -41,7 +45,7 @@ interface GraphState {
   addCluster: (cluster: GraphCluster) => void;
   addNode: (node: GraphNode) => void;
   updateNode: (nodeId: string, updates: Partial<GraphNode>) => void;
-  addEdge: (link: GraphEdge) => void;
+  addEdge: (link: EvolutionLink) => void;
   removeNode: (nodeId: string) => void;
   removeEdge: (linkId: string) => void;
 
@@ -50,7 +54,7 @@ interface GraphState {
   getNodesByCluster: (clusterId: string) => GraphNode[];
   getGraphData: () => {
     nodes: GraphNode[];
-    edges: GraphEdge[];
+    edges: EvolutionLink[];
   };
 
   // Utility
@@ -64,7 +68,7 @@ interface GraphState {
 const initialState = {
   nodes: new Map<string, GraphNode>(),
   clusters: new Map<string, GraphCluster>(),
-  links: new Map<string, GraphEdge>(),
+  links: new Map<string, EvolutionLink>(),
   nodesByCluster: new Map<string, Set<string>>(),
   nodesByParent: new Map<string, Set<string>>(),
   linksBySource: new Map<string, Set<string>>(),
