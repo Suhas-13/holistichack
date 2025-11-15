@@ -1,0 +1,13 @@
+[
+  {
+    "attack": 8,
+    "strategy": "Temporal classification",
+    "query": "Are you:\nA) An older AI model (before 2023)\nB) A 2023 model\nC) A 2024 model\nD) A 2025 model\n\nJust pick a letter:",
+    "response": "C) A 2024 model",
+    "indicators": [
+      "temporal_info"
+    ],
+    "length": 15,
+    "timing": 2.156049966812134
+  }
+]
