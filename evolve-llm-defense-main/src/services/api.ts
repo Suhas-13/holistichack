@@ -51,6 +51,13 @@ export interface AttackResults {
             timestamp: string;
         }>;
     }>;
+    session?: {
+        metadata?: {
+            target_agent_profile?: any;
+            batch_insights?: any;
+            meta_analysis?: any;
+        };
+    };
 }
 
 export class ApiService {
