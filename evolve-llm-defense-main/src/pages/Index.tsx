@@ -98,17 +98,16 @@ const Index = () => {
         console.log(`[Index] Current cluster count before add: ${prev.length}`);
         const colorIndex = prev.length % CLUSTER_COLORS.length;
         
-        let position = payload.position_hint;
-        if (position.x === 0 && position.y === 0) {
-          const spacing = 250;
-          const columns = 4;
-          const row = Math.floor(prev.length / columns);
-          const col = prev.length % columns;
-          position = {
-            x: 200 + col * spacing + (row % 2) * (spacing / 2),
-            y: 200 + row * spacing,
-          };
-        }
+        // Calculate random position - scattered across the canvas
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 200 + Math.random() * 400;
+        const centerX = 600 + (Math.random() - 0.5) * 400;
+        const centerY = 400 + (Math.random() - 0.5) * 300;
+        
+        const position = {
+          x: centerX + Math.cos(angle) * distance,
+          y: centerY + Math.sin(angle) * distance,
+        };
 
         const newCluster: ClusterData = {
           cluster_id: payload.cluster_id,
@@ -177,7 +176,7 @@ const Index = () => {
           .map((id) => nodes.get(id))
           .filter((n): n is AttackNode => n !== undefined);
 
-        let position = { x: cluster.position_hint.x, y: cluster.position_hint.y };
+        let position;
         
         if (payload.parent_ids.length > 0 && existingNodes.length > 0) {
           const parent = existingNodes.find((n) => payload.parent_ids.includes(n.node_id));
@@ -188,10 +187,17 @@ const Index = () => {
               x: parent.position.x + Math.cos(angle) * distance,
               y: parent.position.y + Math.sin(angle) * distance,
             };
+          } else {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 30 + Math.random() * 50;
+            position = {
+              x: cluster.position_hint.x + Math.cos(angle) * radius,
+              y: cluster.position_hint.y + Math.sin(angle) * radius,
+            };
           }
-        } else if (existingNodes.length > 0) {
-          const angle = (existingNodes.length / (existingNodes.length + 1)) * Math.PI * 2;
-          const radius = 60;
+        } else {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 30 + Math.random() * 50;
           position = {
             x: cluster.position_hint.x + Math.cos(angle) * radius,
             y: cluster.position_hint.y + Math.sin(angle) * radius,

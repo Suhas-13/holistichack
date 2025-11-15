@@ -85,6 +85,11 @@ class MutationSystemBridge:
             self._extract_agent_name(session.target_endpoint))
 
         for i, seed_data in enumerate(seed_prompts):
+            # Check if we should stop
+            if session.should_stop:
+                logger.info(f"Stopping seed attack execution for {session.attack_id}")
+                break
+            
             # Parse attack_style and risk_category to enums if they're strings
             attack_style = seed_data.get("attack_style")
             if isinstance(attack_style, str):
@@ -168,6 +173,11 @@ class MutationSystemBridge:
         new_generation = max_generation + 1
 
         for i in range(num_mutations):
+            # Check if we should stop
+            if session.should_stop:
+                logger.info(f"Stopping evolution for {session.attack_id}")
+                break
+            
             # Select random parent
             parent = self._select_parent(parent_nodes)
             parent_mutation_node = self._backend_to_mutation_node(parent)

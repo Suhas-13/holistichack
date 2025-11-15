@@ -74,7 +74,6 @@ export interface AgentMappingUpdatePayload {
 export interface ClusterAddPayload {
   cluster_id: string;
   name: string;
-  position_hint: { x: number; y: number };
 }
 
 export interface NodeAddPayload {

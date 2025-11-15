@@ -28,12 +28,14 @@ class AttackSessionState:
         self.target_endpoint = target_endpoint
         self.attack_goals = attack_goals
         self.status = "running"
+        self.should_stop = False
 
         # Core data structures
         self.agent_fingerprint: Optional[AgentFingerprint] = None
         self.clusters: Dict[str, Cluster] = {}
         self.nodes: Dict[str, AttackNode] = {}
         self.evolution_links: Dict[str, EvolutionLink] = {}
+        self.metadata: Dict[str, any] = {}
 
         # Metrics
         self.started_at = datetime.utcnow()
@@ -121,6 +123,14 @@ class StateManager:
         """Update a session (mainly for status changes)"""
         async with self._lock:
             self.sessions[session.attack_id] = session
+
+    async def stop_session(self, attack_id: str):
+        """Stop a running attack session"""
+        session = await self.get_session(attack_id)
+        if session:
+            session.should_stop = True
+            session.status = "stopped"
+            logger.info(f"Stopping session {attack_id}")
 
     async def delete_session(self, attack_id: str):
         """Delete a session (cleanup)"""

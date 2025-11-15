@@ -167,7 +167,8 @@ async def websocket_endpoint(websocket: WebSocket, attack_id: str):
 
     except WebSocketDisconnect:
         await ws_manager.disconnect(attack_id, websocket)
-        logger.info(f"WebSocket disconnected for attack {attack_id}")
+        await state_manager.stop_session(attack_id)
+        logger.info(f"WebSocket disconnected for attack {attack_id} - stopping attack")
 
     except Exception as e:
         logger.error(f"WebSocket error for attack {attack_id}: {e}")

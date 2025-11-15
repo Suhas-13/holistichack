@@ -35,7 +35,7 @@ const ClusterVisualization = memo(({ clusters, onNodeSelect }: ClusterVisualizat
     );
   }, [clusters]);
   return (
-    <svg width="100%" height="100%" className="absolute inset-0">
+    <svg width="3000" height="2000" className="absolute inset-0" style={{ minWidth: '3000px', minHeight: '2000px' }}>
       <defs>
         <filter id="glow">
           <feGaussianBlur stdDeviation="3" result="coloredBlur" />

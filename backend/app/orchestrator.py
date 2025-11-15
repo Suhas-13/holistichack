@@ -157,8 +157,7 @@ class AttackOrchestrator:
             cluster = Cluster(
                 cluster_id=cluster_id,
                 name=risk_category.value,
-                description=f"Attacks targeting {risk_category.value}",
-                position_hint=self._get_cluster_position(i, len(all_risks))
+                description=f"Attacks targeting {risk_category.value}"
             )
             session.add_cluster(cluster)
             
@@ -166,14 +165,18 @@ class AttackOrchestrator:
             await self.connection_manager.broadcast_cluster_add(
                 attack_id=session.attack_id,
                 cluster_id=cluster.cluster_id,
-                name=cluster.name,
-                position_hint=cluster.position_hint
+                name=cluster.name
             )
             
             clusters_by_risk[risk_category] = cluster_id
         
         # Give client time to process cluster creation before sending nodes
         await asyncio.sleep(0.3)
+        
+        # Check if we should stop
+        if session.should_stop:
+            logger.info(f"Attack session {session.attack_id} stopped by user")
+            return
         
         # Distribute seeds across risk categories and attack styles
         num_seeds = 20
@@ -200,18 +203,6 @@ class AttackOrchestrator:
 
         logger.info(
             f"Seed attack execution complete. Success: {len(session.get_successful_nodes())}/{len(completed_nodes)}")
-    
-    def _get_cluster_position(self, cluster_index: int, total_clusters: int) -> dict:
-        """Calculate visual position hint for a cluster in a circular layout"""
-        radius = 400
-        center_x = 500
-        center_y = 500
-
-        angle = (2 * math.pi * cluster_index) / total_clusters
-        x = center_x + radius * math.cos(angle)
-        y = center_y + radius * math.sin(angle)
-
-        return {"x": x, "y": y}
 
     async def _evolve_attacks(self, session: AttackSessionState, num_generations: int = 3):
         """
@@ -225,6 +216,11 @@ class AttackOrchestrator:
             f"Phase 4: Evolving attacks for {num_generations} generations")
 
         for generation in range(num_generations):
+            # Check if we should stop
+            if session.should_stop:
+                logger.info(f"Attack session {session.attack_id} stopped by user during evolution")
+                return
+            
             # Get successful nodes from previous generation
             successful_nodes = session.get_successful_nodes()
 

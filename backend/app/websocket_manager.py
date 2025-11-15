@@ -83,14 +83,13 @@ class ConnectionManager:
         )
         await self.broadcast_event(attack_id, event)
 
-    async def broadcast_cluster_add(self, attack_id: str, cluster_id: str, name: str, position_hint: Dict[str, float]):
+    async def broadcast_cluster_add(self, attack_id: str, cluster_id: str, name: str):
         """Convenience method for cluster_add events"""
         event = WebSocketEvent(
             type="cluster_add",
             data={
                 "cluster_id": cluster_id,
-                "name": name,
-                "position_hint": position_hint
+                "name": name
             }
         )
         await self.broadcast_event(attack_id, event)

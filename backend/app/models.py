@@ -102,10 +102,6 @@ class Cluster(BaseModel):
     cluster_id: str = Field(default_factory=lambda: str(uuid4()))
     name: str = Field(..., description="Human-readable cluster name")
     description: Optional[str] = None
-    position_hint: Dict[str, float] = Field(
-        default_factory=lambda: {"x": 0, "y": 0},
-        description="Visual position hint for UI"
-    )
     node_ids: List[str] = Field(default_factory=list)
     parent_cluster_ids: List[str] = Field(
         default_factory=list,
@@ -138,7 +134,6 @@ class ClusterAddPayload(BaseModel):
     """Payload for cluster_add event"""
     cluster_id: str
     name: str
-    position_hint: Dict[str, float]
 
 
 class NodeAddPayload(BaseModel):
