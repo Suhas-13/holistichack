@@ -161,7 +161,7 @@ export async function healthCheck(): Promise<
 export function getWebSocketURL(attackId: string): string {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsHost = import.meta.env.VITE_WS_URL || window.location.host;
-  return `${wsProtocol}//${wsHost}/api/v1/ws/${attackId}`;
+  return `${wsProtocol}//${wsHost}/ws/v1/${attackId}`;
 }
 
 export const apiClient = {

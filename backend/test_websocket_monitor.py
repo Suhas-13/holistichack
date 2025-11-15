@@ -31,8 +31,8 @@ async def monitor_websocket(attack_id: str):
                     event = json.loads(message)
                     
                     timestamp = datetime.now().strftime("%H:%M:%S")
-                    event_type = event.get("event_type", "unknown")
-                    payload = event.get("payload", {})
+                    event_type = event.get("type", "unknown")
+                    payload = event.get("data", {})
                     
                     # Pretty print different event types
                     if event_type == "cluster_add":

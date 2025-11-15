@@ -79,7 +79,7 @@ PORT=8000
 ENVIRONMENT=development
 
 # CORS Settings (adjust for your frontend)
-CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+CORS_ORIGINS=http://localhost:5173
 ```
 
 ### 3. Run the Server
@@ -93,6 +93,8 @@ Or using uvicorn directly:
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+The frontend runs on http://localhost:5173
 
 ### 4. Access API Documentation
 

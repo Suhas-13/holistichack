@@ -94,7 +94,7 @@ VITE_MOCK_WEBSOCKET=true
 VITE_WEBSOCKET_URL=ws://localhost:8000
 
 # REST API base URL
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:8000
 
 # Debug mode
 VITE_DEBUG=false

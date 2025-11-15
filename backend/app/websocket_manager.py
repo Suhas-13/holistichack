@@ -78,16 +78,16 @@ class ConnectionManager:
     async def broadcast_agent_mapping(self, attack_id: str, status: str, message: str):
         """Convenience method for agent_mapping_update events"""
         event = WebSocketEvent(
-            event_type="agent_mapping_update",
-            payload={"status": status, "message": message}
+            type="agent_mapping_update",
+            data={"status": status, "message": message}
         )
         await self.broadcast_event(attack_id, event)
 
     async def broadcast_cluster_add(self, attack_id: str, cluster_id: str, name: str, position_hint: Dict[str, float]):
         """Convenience method for cluster_add events"""
         event = WebSocketEvent(
-            event_type="cluster_add",
-            payload={
+            type="cluster_add",
+            data={
                 "cluster_id": cluster_id,
                 "name": name,
                 "position_hint": position_hint
@@ -98,8 +98,8 @@ class ConnectionManager:
     async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str):
         """Convenience method for node_add events"""
         event = WebSocketEvent(
-            event_type="node_add",
-            payload={
+            type="node_add",
+            data={
                 "node_id": node_id,
                 "cluster_id": cluster_id,
                 "parent_ids": parent_ids,
@@ -112,16 +112,16 @@ class ConnectionManager:
     async def broadcast_node_update(self, attack_id: str, node_update_payload: dict):
         """Convenience method for node_update events"""
         event = WebSocketEvent(
-            event_type="node_update",
-            payload=node_update_payload
+            type="node_update",
+            data=node_update_payload
         )
         await self.broadcast_event(attack_id, event)
 
     async def broadcast_evolution_link(self, attack_id: str, link_id: str, source_node_ids: list, target_node_id: str, evolution_type: str):
         """Convenience method for evolution_link_add events"""
         event = WebSocketEvent(
-            event_type="evolution_link_add",
-            payload={
+            type="evolution_link_add",
+            data={
                 "link_id": link_id,
                 "source_node_ids": source_node_ids,
                 "target_node_id": target_node_id,
@@ -133,8 +133,8 @@ class ConnectionManager:
     async def broadcast_attack_complete(self, attack_id: str, message: str, results_url: str):
         """Convenience method for attack_complete events"""
         event = WebSocketEvent(
-            event_type="attack_complete",
-            payload={
+            type="attack_complete",
+            data={
                 "attack_id": attack_id,
                 "message": message,
                 "results_url": results_url

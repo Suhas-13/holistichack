@@ -37,6 +37,7 @@
 }
 
 @layer components {
+
   /* Cyber-themed button */
   .cyber-button {
     @apply px-4 py-2 bg-elevated text-primary-cyan font-medium font-mono;
@@ -148,12 +149,10 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(
-      to right,
-      transparent,
-      rgba(0, 217, 255, 0.5),
-      transparent
-    );
+    background: linear-gradient(to right,
+        transparent,
+        rgba(0, 217, 255, 0.5),
+        transparent);
     animation: scan 2s linear infinite;
   }
 }
@@ -187,6 +186,7 @@
 
 /* Animations for reduced motion */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -233,10 +233,13 @@
 
 /* Animations */
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.7;
     transform: scale(1.2);
@@ -247,6 +250,7 @@
   0% {
     top: 0;
   }
+
   100% {
     top: 100%;
   }
@@ -256,6 +260,7 @@
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }

@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-This will start the dev server at http://localhost:3000
+This will start the dev server at http://localhost:5173
 
 ## 3. See the Graph in Action
 

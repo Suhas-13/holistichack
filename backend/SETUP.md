@@ -31,7 +31,7 @@ TOGETHER_API_KEY=your_together_api_key_here
 # Optional: Adjust if needed
 HOST=0.0.0.0
 PORT=8000
-CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+CORS_ORIGINS=http://localhost:5173
 ```
 
 **🔑 How to Get API Keys:**

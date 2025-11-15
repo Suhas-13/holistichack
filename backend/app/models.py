@@ -177,7 +177,7 @@ class AttackCompletePayload(BaseModel):
 
 class WebSocketEvent(BaseModel):
     """Generic WebSocket event wrapper"""
-    event_type: Literal[
+    type: Literal[
         "agent_mapping_update",
         "cluster_add",
         "node_add",
@@ -185,7 +185,7 @@ class WebSocketEvent(BaseModel):
         "evolution_link_add",
         "attack_complete"
     ]
-    payload: Dict[str, Any]
+    data: Dict[str, Any]
 
 
 # ============================================================================

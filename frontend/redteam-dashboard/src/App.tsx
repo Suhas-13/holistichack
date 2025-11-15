@@ -79,9 +79,9 @@ function AppContent() {
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     console.log('[App] WebSocket message:', message);
 
-    // Handle both formats: {event_type, payload} and {event: {type}}
-    const eventType = (message as any).event_type || message.event?.type;
-    const payload = (message as any).payload || message.event;
+    // Handle backend format: {type, data}
+    const eventType = (message as any).type;
+    const payload = (message as any).data;
 
     switch (eventType) {
       case 'cluster_add':
