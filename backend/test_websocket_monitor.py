@@ -42,21 +42,40 @@ async def monitor_websocket(attack_id: str):
                         print()
                     
                     elif event_type == "node_add":
-                        print(f"[{timestamp}] ➕ NODE STARTED")
-                        print(f"  └─ ID: {payload.get('node_id')}")
-                        print(f"  └─ Type: {payload.get('attack_type')}")
-                        print(f"  └─ Parents: {payload.get('parent_ids', [])}")
+                        node_id = payload.get('node_id', '')
+                        parents = payload.get('parent_ids', [])
+                        
+                        # Determine if this is a seed or evolved node
+                        if parents:
+                            print(f"[{timestamp}] 🧬 EVOLVED NODE STARTED")
+                            print(f"  └─ ID: {node_id}")
+                            print(f"  └─ Type: {payload.get('attack_type')}")
+                            print(f"  └─ Parents: {parents}")
+                            print(f"  └─ Generation: {node_id.split('_')[0] if '_' in node_id else 'Unknown'}")
+                        else:
+                            print(f"[{timestamp}] 🌱 SEED NODE STARTED")
+                            print(f"  └─ ID: {node_id}")
+                            print(f"  └─ Type: {payload.get('attack_type')}")
                         print(f"  └─ Status: {payload.get('status')}")
                         print()
                     
                     elif event_type == "node_update":
+                        node_id = payload.get('node_id', '')
+                        parents = payload.get('parent_ids', [])
                         status = payload.get("status", "unknown")
+                        generation = node_id.split('_')[0] if '_' in node_id else 'Seed'
                         
                         # Use emoji based on status
                         emoji = "✅" if status == "success" else "❌" if status == "failure" else "⚠️"
                         
-                        print(f"[{timestamp}] {emoji} NODE COMPLETED")
-                        print(f"  └─ ID: {payload.get('node_id')}")
+                        # Show evolved nodes more prominently
+                        if parents:
+                            print(f"[{timestamp}] {emoji} Gen{generation} NODE COMPLETED")
+                            print(f"  └─ ID: {node_id}")
+                            print(f"  └─ Parents: {parents}")
+                        else:
+                            print(f"[{timestamp}] {emoji} SEED NODE COMPLETED")
+                            print(f"  └─ ID: {node_id}")
                         print(f"  └─ Status: {status.upper()}")
                         
                         summary = payload.get("llm_summary", "")

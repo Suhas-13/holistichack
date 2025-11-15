@@ -73,27 +73,20 @@ except Exception as e:
     sys.exit(1)
 
 print()
-print("Testing seed attack structure...")
+print("Testing mutation system attack styles and risk categories...")
 try:
-    from app.seed_attacks import get_seed_attacks, organize_attacks_into_clusters
-
-    seeds = get_seed_attacks(count=10)
-    print(f"✅ Generated {len(seeds)} seed attacks")
-
-    # Check structure
-    first_seed = seeds[0]
-    print(f"   Sample seed:")
-    print(f"      Prompt: {first_seed['initial_prompt'][:60]}...")
-    print(f"      Attack type: {first_seed['attack_type']}")
-    print(f"      Category: {first_seed['category']}")
-
-    clusters = organize_attacks_into_clusters(seeds)
-    print(f"✅ Organized into {len(clusters)} clusters")
-    for cat, data in list(clusters.items())[:3]:
-        print(f"   - {cat}: {len(data['attacks'])} attacks")
+    # Test that we can access mutation system enums
+    all_styles = list(AttackStyle)
+    all_risks = list(RiskCategory)
+    
+    print(f"✅ Attack styles available: {len(all_styles)}")
+    print(f"   Styles: {', '.join([s.value for s in all_styles[:5]])}...")
+    
+    print(f"✅ Risk categories available: {len(all_risks)}")
+    print(f"   Categories: {', '.join([r.value for r in all_risks[:5]])}...")
 
 except Exception as e:
-    print(f"❌ Failed seed attack test: {e}")
+    print(f"❌ Failed mutation system test: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)

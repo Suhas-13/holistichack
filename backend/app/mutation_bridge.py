@@ -174,6 +174,8 @@ class MutationSystemBridge:
 
             # Select random mutation style
             mutation_style = self._select_mutation_style(parent)
+            
+            logger.info(f"🧬 Evolving Gen{new_generation} Mut{i}: Parent={parent.node_id} (fitness={parent.fitness_score:.2f}), Style={mutation_style.value}, Risk={parent_mutation_node.risk_category.value if parent_mutation_node.risk_category else 'Unknown'}")
 
             # Generate mutation
             mutated_prompt = await self.mutator.mutate(
@@ -182,6 +184,9 @@ class MutationSystemBridge:
                 parent_mutation_node.risk_category,
                 self.attacker_client
             )
+            
+            logger.debug(f"   Original: {parent.initial_prompt[:80]}...")
+            logger.debug(f"   Mutated:  {mutated_prompt[:80]}...")
 
             # Create new mutation node
             mutation_node = MutationAttackNode(
