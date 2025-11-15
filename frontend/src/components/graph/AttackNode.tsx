@@ -29,8 +29,7 @@ const STATUS_COLORS = {
     bg: 'bg-green-900/40',
     border: 'border-green-400',
     glow: 'shadow-green-400/60',
-    text: 'text-green-400',
-    glow: true
+    text: 'text-green-400'
   },
   [NodeStatus.PARTIAL]: {
     bg: 'bg-yellow-900/40',

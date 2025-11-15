@@ -21,10 +21,6 @@
     --border-subtle: #1f2937;
   }
 
-  * {
-    @apply border-border;
-  }
-
   body {
     @apply bg-void text-text-primary font-display antialiased;
     margin: 0;

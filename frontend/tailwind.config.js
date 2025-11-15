@@ -28,7 +28,10 @@ export default {
         // Text colors
         'text-primary': '#f9fafb',
         'text-secondary': '#9ca3af',
-        'text-muted': '#6b7280'
+        'text-muted': '#6b7280',
+        
+        // Border
+        'border': '#1f2937'
       },
       fontFamily: {
         display: ['Inter', 'system-ui', 'sans-serif'],

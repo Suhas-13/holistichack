@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useGraphStore } from './graphStore';
 
 /**
  * Attack goal types
@@ -251,7 +252,7 @@ export const useAttackStore = create<AttackStore>((set, get) => ({
     set({ wsStatus: 'connecting' });
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/api/v1/ws/${attackId}`);
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/v1/${attackId}`);
 
     ws.onopen = () => {
       console.log('WebSocket connected');
@@ -262,7 +263,10 @@ export const useAttackStore = create<AttackStore>((set, get) => ({
       try {
         const data = JSON.parse(event.data);
 
-        // Handle different event types
+        // Forward all events to graphStore for visualization
+        useGraphStore.getState().handleEvent(data);
+
+        // Handle specific event types for attack control
         switch (data.type) {
           case 'attack_progress':
             set({
