@@ -57,6 +57,9 @@ class AttackOrchestrator:
         try:
             logger.info(f"Starting attack session {attack_id}")
 
+            # Give client time to connect to WebSocket
+            await asyncio.sleep(0.5)
+
             # Create session state
             session = await self.state_manager.create_session(
                 attack_id=attack_id,
@@ -168,6 +171,9 @@ class AttackOrchestrator:
             )
             
             clusters_by_risk[risk_category] = cluster_id
+        
+        # Give client time to process cluster creation before sending nodes
+        await asyncio.sleep(0.3)
         
         # Distribute seeds across risk categories and attack styles
         num_seeds = 20

@@ -56,7 +56,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=['*'],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -88,8 +88,9 @@ async def start_attack(request: StartAttackRequest):
     # Generate unique attack ID
     attack_id = str(uuid4())
 
-    # Construct WebSocket URL
-    websocket_url = f"ws://{settings.HOST}:{settings.PORT}/ws/v1/{attack_id}"
+    # Construct WebSocket URL (use localhost for development)
+    host = "localhost" if settings.HOST == "0.0.0.0" else settings.HOST
+    websocket_url = f"ws://{host}:{settings.PORT}/ws/v1/{attack_id}"
     if settings.ENVIRONMENT == "production":
         # In production, use wss:// and your actual domain
         websocket_url = f"wss://your-domain.com/ws/v1/{attack_id}"
