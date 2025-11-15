@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { AttackNode } from "@/types/evolution";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 
 interface AttackNodeComponentProps {
   node: AttackNode;
@@ -17,6 +17,14 @@ const AttackNodeComponent = memo(({ node, onClick }: AttackNodeComponentProps) =
   const radius = 20;
   console.log("[AttackNodeComponent] Rendering node:", node.node_id, "at", x, y);
 
+  // Determine node appearance based on status
+  const isRunning = node.status === "running";
+  const strokeColor = isRunning 
+    ? "hsl(var(--muted-foreground))"  // Gray/white for running
+    : node.success 
+      ? "hsl(var(--success))" 
+      : "hsl(var(--destructive))";
+
   return (
     <g
       className="cursor-pointer"
@@ -31,7 +39,7 @@ const AttackNodeComponent = memo(({ node, onClick }: AttackNodeComponentProps) =
         cx={x}
         cy={y}
         r={radius + 5}
-        fill={node.success ? "hsl(var(--success))" : "hsl(var(--destructive))"}
+        fill={strokeColor}
         opacity="0.2"
         pointerEvents="none"
       />
@@ -42,14 +50,16 @@ const AttackNodeComponent = memo(({ node, onClick }: AttackNodeComponentProps) =
         cy={y}
         r={radius}
         fill="hsl(var(--card))"
-        stroke={node.success ? "hsl(var(--success))" : "hsl(var(--destructive))"}
+        stroke={strokeColor}
         strokeWidth="2"
         className="drop-shadow-lg"
       />
 
-      {/* Success/Failure icon */}
+      {/* Success/Failure/Running icon */}
       <foreignObject x={x - 8} y={y - 8} width="16" height="16">
-        {node.success ? (
+        {isRunning ? (
+          <HelpCircle className="w-4 h-4 text-muted-foreground" />
+        ) : node.success ? (
           <CheckCircle2 className="w-4 h-4 text-success" />
         ) : (
           <XCircle className="w-4 h-4 text-destructive" />
