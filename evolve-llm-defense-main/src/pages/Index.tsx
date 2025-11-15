@@ -100,11 +100,11 @@ const Index = () => {
         console.log(`[Index] Current cluster count before add: ${prev.length}`);
         const colorIndex = prev.length % CLUSTER_COLORS.length;
         
-        // Calculate random position - scattered across the canvas
+        // Calculate random position - keep clusters more centered
         const angle = Math.random() * Math.PI * 2;
-        const distance = 200 + Math.random() * 400;
-        const centerX = 600 + (Math.random() - 0.5) * 400;
-        const centerY = 400 + (Math.random() - 0.5) * 300;
+        const distance = 150 + Math.random() * 250;
+        const centerX = 900;
+        const centerY = 600;
         
         const position = {
           x: centerX + Math.cos(angle) * distance,
