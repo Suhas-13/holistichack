@@ -180,11 +180,11 @@ body {
 }
 
 .animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
+  /* Disabled to prevent flicker */
 }
 
 .animate-scale-pulse {
-  animation: scale-pulse 2s ease-in-out infinite;
+  /* Disabled to prevent flicker */
 }
 
 .hover\:scale-102:hover {
@@ -400,7 +400,7 @@ pre {
 
 /* Animation Classes */
 .animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+  /* Disabled to prevent flicker */
 }
 
 .animate-shimmer {
@@ -419,15 +419,15 @@ pre {
 }
 
 .animate-slide-in-left {
-  animation: slide-in-left 0.3s ease-out;
+  /* Disabled to prevent flicker */
 }
 
 .animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out;
+  /* Disabled to prevent flicker */
 }
 
 .animate-slide-in-bottom {
-  animation: slide-in-bottom 0.3s ease-out;
+  /* Disabled to prevent flicker */
 }
 
 .animate-spin {
@@ -521,7 +521,7 @@ pre {
               0 0 40px rgba(167, 139, 250, 0.3),
               0 8px 16px -2px rgba(0, 217, 255, 0.4),
               inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px) scale(1.02);
+  /* Removed transform to prevent flicker */
 }
 
 .btn-primary:hover::before {
@@ -529,7 +529,7 @@ pre {
 }
 
 .btn-primary:active {
-  transform: translateY(0) scale(0.98);
+  /* Removed transform to prevent flicker */
   box-shadow: 0 0 15px rgba(0, 217, 255, 0.4),
               0 4px 8px -1px rgba(0, 217, 255, 0.3),
               inset 0 2px 4px rgba(0, 0, 0, 0.2);

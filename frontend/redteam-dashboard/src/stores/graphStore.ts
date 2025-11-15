@@ -106,6 +106,7 @@ export const useGraphStore = create<GraphState>()(
 
     addCluster: (cluster: GraphCluster) => {
       set((state) => {
+        console.log('[GraphStore] Adding cluster:', cluster.cluster_id, cluster.name);
         if (state.clusters.has(cluster.cluster_id)) {
           console.warn(`Cluster ${cluster.cluster_id} already exists`);
           return;
@@ -125,15 +126,28 @@ export const useGraphStore = create<GraphState>()(
 
     addNode: (node: GraphNode) => {
       set((state) => {
+        console.log('[GraphStore] Adding node:', node.node_id, 'to cluster:', node.cluster_id);
         if (state.nodes.has(node.node_id)) {
           console.warn(`Node ${node.node_id} already exists`);
           return;
         }
 
-        const cluster = state.clusters.get(node.cluster_id);
+        // Auto-create cluster if it doesn't exist (race condition handling)
+        let cluster = state.clusters.get(node.cluster_id);
         if (!cluster) {
-          console.error(`Cluster ${node.cluster_id} not found`);
-          return;
+          console.warn(`Cluster ${node.cluster_id} not found. Auto-creating it.`);
+          cluster = {
+            cluster_id: node.cluster_id,
+            name: `Cluster ${state.clusters.size + 1}`,
+            position_hint: { x: 500, y: 500 },
+            color: generateClusterColor(state.clusters.size),
+            total_attacks: 0,
+            successful_attacks: 0,
+            collapsed: false,
+            visible: true,
+          };
+          state.clusters.set(node.cluster_id, cluster);
+          state.nodesByCluster.set(node.cluster_id, new Set());
         }
 
         state.nodes.set(node.node_id, node);
@@ -162,7 +176,7 @@ export const useGraphStore = create<GraphState>()(
       set((state) => {
         const node = state.nodes.get(nodeId);
         if (!node) {
-          console.error(`Node ${nodeId} not found`);
+          console.warn(`Node ${nodeId} not found for update. Skipping.`);
           return;
         }
 
@@ -184,7 +198,7 @@ export const useGraphStore = create<GraphState>()(
       });
     },
 
-    addEdge: (link: GraphEdge) => {
+    addEdge: (link: EvolutionLink) => {
       set((state) => {
         if (state.links.has(link.link_id)) {
           console.warn(`Link ${link.link_id} already exists`);

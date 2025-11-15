@@ -16,6 +16,7 @@ import { NodeDetailPanel } from './components/NodeDetailPanel';
 import { ResultsModal } from './components/ResultsModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MockModeToggle } from './components/MockModeToggle';
+import { DebugPanel } from './components/DebugPanel';
 
 // Hooks & API
 import { useWebSocket } from './hooks/useWebSocket';
@@ -79,9 +80,9 @@ function AppContent() {
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     console.log('[App] WebSocket message:', message);
 
-    // Handle backend format: {type, data}
-    const eventType = (message as any).type;
-    const payload = (message as any).data;
+    // Handle both formats: {type, data} and {event_type, payload}
+    const eventType = (message as any).type || (message as any).event_type;
+    const payload = (message as any).data || (message as any).payload;
 
     switch (eventType) {
       case 'cluster_add':
@@ -89,10 +90,12 @@ function AppContent() {
         addCluster({
           cluster_id: payload.cluster_id,
           name: payload.name || `Cluster ${payload.cluster_id}`,
-          color: payload.color,
-          position: payload.position_hint || { x: 0, y: 0 },
+          color: payload.color || '#FF6B6B',
+          position_hint: payload.position_hint || { x: 0, y: 0 },
           total_attacks: 0,
           successful_attacks: 0,
+          collapsed: false,
+          visible: true,
         });
         break;
 
@@ -163,14 +166,20 @@ function AppContent() {
     setError(null);
 
     try {
+      console.log('[App] Starting attack with config:', config);
       const response = await apiClient.startAttack(config);
+      console.log('[App] API response:', response);
 
       if (response.success && response.data) {
-        setAttackId(response.data.attack_id);
+        const newAttackId = response.data.attack_id;
+        console.log('[App] Attack started successfully!');
+        console.log('[App] Attack ID:', newAttackId);
+        console.log('[App] WebSocket URL will be:', `ws://localhost:5173/ws/v1/${newAttackId}`);
+        setAttackId(newAttackId);
         setAttackStatus(AttackStatus.RUNNING);
         setCurrentGeneration(0);
-        console.log('[App] Attack started:', response.data.attack_id);
       } else {
+        console.error('[App] Attack start failed:', response.error);
         setError(response.error?.message || 'Failed to start attack');
         setAttackStatus(AttackStatus.FAILED);
       }
@@ -344,7 +353,7 @@ function AppContent() {
                 (isConnected
                   ? 'bg-[var(--status-success)]'
                   : isConnecting
-                  ? 'bg-[var(--status-running)] animate-pulse'
+                  ? 'bg-[var(--status-running)]'
                   : 'bg-[var(--status-failure)]')
               }
             />
@@ -356,7 +365,10 @@ function AppContent() {
       )}
 
       {/* Mock Mode Toggle */}
-      <MockModeToggle />
+      {/* <MockModeToggle /> */}
+
+      {/* Debug Panel */}
+      {/* {import.meta.env.DEV && attackId && <DebugPanel />} */}
     </div>
   );
 }

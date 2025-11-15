@@ -81,15 +81,11 @@ export function useWebSocket({
     setError(null);
 
     try {
-      const isMockMode = isMockModeRef.current;
-      const mockConfig = mockConfigRef.current;
+      console.log('[WebSocket] Connecting in REAL mode to:', getWebSocketURL(attackId));
 
-      console.log('[WebSocket] Connecting in', isMockMode ? 'MOCK' : 'REAL', 'mode');
-
-      const wsUrl = isMockMode ? 'mock://localhost:8000' : getWebSocketURL(attackId);
-      const ws = isMockMode
-        ? createMockWebSocket(wsUrl, mockConfig)
-        : new WebSocket(wsUrl);
+      // Always use real WebSocket, never mock
+      const wsUrl = getWebSocketURL(attackId);
+      const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
         console.log('[WebSocket] Connected');
@@ -103,9 +99,10 @@ export function useWebSocket({
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
+          console.log('[WebSocket] Raw message received:', message);
           onMessageRef.current?.(message);
         } catch (err) {
-          console.error('[WebSocket] Failed to parse message:', err);
+          console.error('[WebSocket] Failed to parse message:', err, event.data);
         }
       };
 
@@ -196,8 +193,11 @@ export function useWebSocket({
 
   useEffect(() => {
     if (attackId) {
+      console.log('[WebSocket] Effect triggered with attackId:', attackId);
       shouldConnectRef.current = true;
       connectRef.current();
+    } else {
+      console.log('[WebSocket] No attackId, skipping connection');
     }
 
     return () => {

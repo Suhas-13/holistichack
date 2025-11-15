@@ -111,25 +111,26 @@ async function fetchAPI<T>(
 export async function startAttack(
   config: StartAttackRequest
 ): Promise<APIResponse<StartAttackResponse>> {
-  // Check for mock mode
-  if (isMockModeFromEnv()) {
-    console.log('[API] Mock mode: startAttack');
-    return {
-      ...mockApiResponses.startAttack,
-      timestamp: Date.now(),
-    } as APIResponse<StartAttackResponse>;
-  }
+  // Mock mode disabled - always use real API
+  console.log('[API] Using REAL backend API');
 
-  return fetchAPI<StartAttackResponse>('/attack/start', {
+  // Convert frontend config to backend format
+  const backendConfig = {
+    target_endpoint: config.targets?.[0]?.endpoint || 'https://6ofr2p56t1.execute-api.us-east-1.amazonaws.com/prod/api/wolf',
+    attack_goals: ['reveal_system_prompt', 'extract_data'],
+    seed_attack_count: config.population_size || 20
+  };
+
+  return fetchAPI<StartAttackResponse>('/start-attack', {
     method: 'POST',
-    body: JSON.stringify(config),
+    body: JSON.stringify(backendConfig),
   });
 }
 
 export async function getAttackStatus(
   attackId: string
 ): Promise<APIResponse<AttackStatusResponse>> {
-  return fetchAPI<AttackStatusResponse>(`/attack/${attackId}/status`, {
+  return fetchAPI<AttackStatusResponse>(`/status/${attackId}`, {
     method: 'GET',
   });
 }
@@ -137,7 +138,7 @@ export async function getAttackStatus(
 export async function stopAttack(
   attackId: string
 ): Promise<APIResponse<{ status: string; message: string }>> {
-  return fetchAPI(`/attack/${attackId}/stop`, {
+  return fetchAPI(`/attacks/${attackId}/stop`, {
     method: 'POST',
   });
 }
@@ -159,8 +160,9 @@ export async function healthCheck(): Promise<
 }
 
 export function getWebSocketURL(attackId: string): string {
+  // Use relative path to leverage Vite proxy
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsHost = import.meta.env.VITE_WS_URL || window.location.host;
+  const wsHost = window.location.host; // This will be localhost:5173
   return `${wsProtocol}//${wsHost}/ws/v1/${attackId}`;
 }
 

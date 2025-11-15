@@ -41,8 +41,8 @@ console.log('[MockMode] Mock mode enabled:', envMockMode);
 export const useMockMode = create<MockModeState>()(
   persist(
     (set) => ({
-      // Force mock mode if environment variable is set
-      isEnabled: envMockMode,
+      // Force mock mode OFF for real backend integration
+      isEnabled: false,
 
       config: {
         numClusters: 4,
