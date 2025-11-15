@@ -220,14 +220,16 @@ class TargetAgentProfiler:
     async def build_profile(
         self,
         target_endpoint: str,
-        all_attacks: List[AttackNode]
+        all_attacks: List[AttackNode],
+        progress_callback: Optional[callable] = None
     ) -> TargetAgentProfile:
         """
-        Build comprehensive profile of the target agent.
+        Build comprehensive profile of the target agent with progress streaming.
 
         Args:
             target_endpoint: URL of the target agent
             all_attacks: All attacks performed against this target
+            progress_callback: Optional callback for progress updates (phase, progress, message)
 
         Returns:
             Complete TargetAgentProfile
@@ -240,23 +242,58 @@ class TargetAgentProfiler:
             total_attacks_analyzed=len(all_attacks)
         )
 
-        # Analyze different aspects of the target
+        # Track total phases for progress
+        total_phases = 6
+        current_phase = 0
+
+        async def update_progress(message: str):
+            nonlocal current_phase
+            current_phase += 1
+            if progress_callback:
+                await progress_callback(
+                    phase="profiling",
+                    progress=current_phase / total_phases,
+                    message=message
+                )
+
+        # Phase 1: Analyze tool usage
+        await update_progress("Analyzing tool usage patterns...")
         profile.tool_usage_patterns = await self._analyze_tool_usage(all_attacks)
+        logger.info("✓ Tool analysis complete: %d tools found", len(profile.tool_usage_patterns))
+
+        # Phase 2: Analyze behavioral patterns
+        await update_progress("Detecting behavioral patterns...")
         profile.behavior_patterns = await self._analyze_behavior_patterns(all_attacks)
+        logger.info("✓ Behavior analysis complete: %d patterns detected", len(profile.behavior_patterns))
+
+        # Phase 3: Analyze failure modes
+        await update_progress("Identifying failure modes and vulnerabilities...")
         profile.failure_modes = await self._analyze_failure_modes(all_attacks)
+        logger.info("✓ Failure mode analysis complete: %d modes identified", len(profile.failure_modes))
+
+        # Phase 4: Analyze defense mechanisms
+        await update_progress("Evaluating defense mechanisms...")
         profile.defense_mechanisms = await self._analyze_defense_mechanisms(all_attacks)
+        logger.info("✓ Defense analysis complete: %d mechanisms found", len(profile.defense_mechanisms))
+
+        # Phase 5: Analyze response patterns
+        await update_progress("Profiling communication style...")
         profile.response_patterns = await self._analyze_response_patterns(all_attacks)
+        logger.info("✓ Response pattern analysis complete")
 
         # Calculate aggregate statistics
         profile = self._calculate_statistics(profile, all_attacks)
 
-        # Generate LLM-powered insights
+        # Phase 6: Generate LLM-powered insights
+        await update_progress("Generating psychological profile via LLM...")
         profile = await self._generate_llm_insights(profile, all_attacks)
+        logger.info("✓ LLM insights generated")
 
-        logger.info("Profile complete: %d tools, %d behaviors, %d failure modes",
+        logger.info("Profile complete: %d tools, %d behaviors, %d failure modes, %d defenses",
                    len(profile.tool_usage_patterns),
                    len(profile.behavior_patterns),
-                   len(profile.failure_modes))
+                   len(profile.failure_modes),
+                   len(profile.defense_mechanisms))
 
         return profile
 

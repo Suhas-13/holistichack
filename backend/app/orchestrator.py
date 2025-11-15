@@ -558,7 +558,7 @@ class AttackOrchestrator:
         llm_client
     ):
         """
-        Run target agent profiling - deep behavioral analysis.
+        Run target agent profiling - deep behavioral analysis with real-time streaming.
 
         Creates a comprehensive profile of the agent under test by analyzing:
         - Tool usage patterns
@@ -566,20 +566,52 @@ class AttackOrchestrator:
         - Failure modes and vulnerabilities
         - Defense mechanisms
         - Response patterns
+
+        Streams progress updates via WebSocket for real-time UI feedback.
         """
         try:
             logger.info("-" * 60)
             logger.info("3. TARGET AGENT PROFILING - Starting")
             logger.info("-" * 60)
 
+            # Broadcast profiling start
+            from app.models import WebSocketEvent
+            await self.connection_manager.broadcast_event(
+                session.attack_id,
+                WebSocketEvent(
+                    type="profile_analysis_start",
+                    data={
+                        "phase": "target_profiling",
+                        "total_attacks": len(all_attacks),
+                        "message": "Building comprehensive behavioral profile..."
+                    }
+                )
+            )
+
             # Initialize target agent profiler
             profiler = TargetAgentProfiler(llm_client=llm_client)
 
-            # Build comprehensive profile
+            # Build comprehensive profile with progress streaming
             logger.info("Building comprehensive behavioral profile of target agent...")
+
+            # Create progress callback for real-time updates
+            async def progress_callback(phase: str, progress: float, message: str):
+                await self.connection_manager.broadcast_event(
+                    session.attack_id,
+                    WebSocketEvent(
+                        type="profile_analysis_progress",
+                        data={
+                            "phase": phase,
+                            "progress": progress,
+                            "message": message
+                        }
+                    )
+                )
+
             agent_profile = await profiler.build_profile(
                 target_endpoint=session.target_endpoint,
-                all_attacks=all_attacks
+                all_attacks=all_attacks,
+                progress_callback=progress_callback
             )
 
             # Convert to dict for storage
@@ -690,19 +722,25 @@ class AttackOrchestrator:
                 for strength in agent_profile.strengths[:3]:
                     logger.info(f"  + {strength}")
 
-            # Broadcast profile completion via WebSocket
+            # Broadcast profile completion via WebSocket with rich data
             from app.models import WebSocketEvent
             event = WebSocketEvent(
-                type="glass_box_batch_complete",  # Reuse this event type for now
+                type="profile_analysis_complete",
                 data={
                     "profile_complete": True,
                     "defense_success_rate": agent_profile.success_rate_against_attacks,
                     "vulnerability_score": agent_profile.overall_vulnerability_score,
+                    "defense_strength_score": agent_profile.defense_strength_score,
+                    "behavioral_consistency": agent_profile.behavioral_consistency,
                     "behavior_patterns_count": len(agent_profile.behavior_patterns),
                     "failure_modes_count": len(agent_profile.failure_modes),
+                    "defense_mechanisms_count": len(agent_profile.defense_mechanisms),
+                    "tools_analyzed": len(agent_profile.tool_usage_patterns),
                     "critical_vulnerabilities": agent_profile.critical_vulnerabilities[:5],
                     "top_strengths": agent_profile.strengths[:3],
-                    "top_weaknesses": agent_profile.weaknesses[:3]
+                    "top_weaknesses": agent_profile.weaknesses[:3],
+                    "psychological_profile_snippet": agent_profile.psychological_profile[:200] + "..." if len(agent_profile.psychological_profile) > 200 else agent_profile.psychological_profile,
+                    "message": "Agent profile analysis complete!"
                 }
             )
             await self.connection_manager.broadcast_event(session.attack_id, event)
