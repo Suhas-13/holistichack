@@ -59,8 +59,8 @@ export function useWebSocket({
   const onErrorRef = useRef(onError);
 
   // Create refs for connect/disconnect (will be assigned later)
-  const connectRef = useRef<() => void>(() => {});
-  const disconnectRef = useRef<() => void>(() => {});
+  const connectRef = useRef<() => void>(() => { });
+  const disconnectRef = useRef<() => void>(() => { });
 
   // Update all refs when values change (but don't trigger re-renders)
   useEffect(() => {

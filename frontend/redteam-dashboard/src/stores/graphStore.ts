@@ -206,7 +206,7 @@ export const useGraphStore = create<GraphState>()(
         }
 
         const allNodesExist = link.source_node_ids.every((id) => state.nodes.has(id)) &&
-                              state.nodes.has(link.target_node_id);
+          state.nodes.has(link.target_node_id);
         if (!allNodesExist) {
           console.error(`Some nodes not found for link ${link.link_id}`);
           return;
