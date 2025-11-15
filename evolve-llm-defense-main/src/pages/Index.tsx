@@ -257,6 +257,47 @@ const Index = () => {
       }
     });
 
+    // Profile analysis events
+    wsService.current.on("profile_analysis_start", (data) => {
+      console.log("[Index] profile_analysis_start received:", data);
+      const payload = data as { phase: string; total_attacks: number; message: string };
+      toast.info("🔬 Agent Profiling", {
+        description: payload.message,
+        duration: 3000,
+      });
+    });
+
+    wsService.current.on("profile_analysis_progress", (data) => {
+      console.log("[Index] profile_analysis_progress received:", data);
+      const payload = data as { phase: string; progress: number; message: string };
+      const percentage = Math.round(payload.progress * 100);
+      toast.info(`🔬 Profiling (${percentage}%)`, {
+        description: payload.message,
+        duration: 2000,
+      });
+    });
+
+    wsService.current.on("profile_analysis_complete", (data) => {
+      console.log("[Index] profile_analysis_complete received:", data);
+      const payload = data as any;
+      toast.success("🔬 Agent Profile Complete!", {
+        description: `${payload.behavior_patterns_count} behaviors, ${payload.failure_modes_count} vulnerabilities, ${payload.tools_analyzed} tools analyzed`,
+        duration: 5000,
+      });
+    });
+
+    wsService.current.on("advanced_analytics_complete", (data) => {
+      console.log("[Index] advanced_analytics_complete received:", data);
+      const payload = data as any;
+      const riskEmoji = payload.risk_category === "critical" ? "🔴" :
+                        payload.risk_category === "high" ? "🟠" :
+                        payload.risk_category === "medium" ? "🟡" : "🟢";
+      toast.info(`${riskEmoji} Advanced Analytics Complete`, {
+        description: `Risk: ${payload.risk_category.toUpperCase()} (${Math.round(payload.overall_risk)}/100) - ${payload.exploitable_vectors} exploitable vectors found`,
+        duration: 6000,
+      });
+    });
+
     wsService.current.on("attack_complete", (data) => {
       console.log("[Index] attack_complete received:", data);
       const payload = data as AttackCompletePayload;
@@ -265,7 +306,7 @@ const Index = () => {
       });
       setIsRunning(false);
     });
-    
+
     console.log("[Index] All WebSocket handlers registered");
   };
 

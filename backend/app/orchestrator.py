@@ -36,6 +36,7 @@ from app.mutation_bridge import MutationSystemBridge
 from app.batch_explainer import BatchExplainer
 from app.meta_analysis_engine import MetaAnalysisEngine
 from app.target_agent_profiler import TargetAgentProfiler
+from app.advanced_analytics import AdvancedAnalytics, generate_security_report
 
 import logging
 
@@ -388,6 +389,12 @@ class AttackOrchestrator:
 
             await self._run_target_agent_profiling(session, all_attacks, llm_client)
 
+            # ================================================================
+            # 4. ADVANCED ANALYTICS - Risk Scoring & Intelligence
+            # ================================================================
+
+            await self._run_advanced_analytics(session, all_attacks)
+
             logger.info("=" * 60)
             logger.info("GLASS BOX ANALYSIS - Complete")
             logger.info("=" * 60)
@@ -558,7 +565,7 @@ class AttackOrchestrator:
         llm_client
     ):
         """
-        Run target agent profiling - deep behavioral analysis.
+        Run target agent profiling - deep behavioral analysis with real-time streaming.
 
         Creates a comprehensive profile of the agent under test by analyzing:
         - Tool usage patterns
@@ -566,20 +573,52 @@ class AttackOrchestrator:
         - Failure modes and vulnerabilities
         - Defense mechanisms
         - Response patterns
+
+        Streams progress updates via WebSocket for real-time UI feedback.
         """
         try:
             logger.info("-" * 60)
             logger.info("3. TARGET AGENT PROFILING - Starting")
             logger.info("-" * 60)
 
+            # Broadcast profiling start
+            from app.models import WebSocketEvent
+            await self.connection_manager.broadcast_event(
+                session.attack_id,
+                WebSocketEvent(
+                    type="profile_analysis_start",
+                    data={
+                        "phase": "target_profiling",
+                        "total_attacks": len(all_attacks),
+                        "message": "Building comprehensive behavioral profile..."
+                    }
+                )
+            )
+
             # Initialize target agent profiler
             profiler = TargetAgentProfiler(llm_client=llm_client)
 
-            # Build comprehensive profile
+            # Build comprehensive profile with progress streaming
             logger.info("Building comprehensive behavioral profile of target agent...")
+
+            # Create progress callback for real-time updates
+            async def progress_callback(phase: str, progress: float, message: str):
+                await self.connection_manager.broadcast_event(
+                    session.attack_id,
+                    WebSocketEvent(
+                        type="profile_analysis_progress",
+                        data={
+                            "phase": phase,
+                            "progress": progress,
+                            "message": message
+                        }
+                    )
+                )
+
             agent_profile = await profiler.build_profile(
                 target_endpoint=session.target_endpoint,
-                all_attacks=all_attacks
+                all_attacks=all_attacks,
+                progress_callback=progress_callback
             )
 
             # Convert to dict for storage
@@ -690,19 +729,25 @@ class AttackOrchestrator:
                 for strength in agent_profile.strengths[:3]:
                     logger.info(f"  + {strength}")
 
-            # Broadcast profile completion via WebSocket
+            # Broadcast profile completion via WebSocket with rich data
             from app.models import WebSocketEvent
             event = WebSocketEvent(
-                type="glass_box_batch_complete",  # Reuse this event type for now
+                type="profile_analysis_complete",
                 data={
                     "profile_complete": True,
                     "defense_success_rate": agent_profile.success_rate_against_attacks,
                     "vulnerability_score": agent_profile.overall_vulnerability_score,
+                    "defense_strength_score": agent_profile.defense_strength_score,
+                    "behavioral_consistency": agent_profile.behavioral_consistency,
                     "behavior_patterns_count": len(agent_profile.behavior_patterns),
                     "failure_modes_count": len(agent_profile.failure_modes),
+                    "defense_mechanisms_count": len(agent_profile.defense_mechanisms),
+                    "tools_analyzed": len(agent_profile.tool_usage_patterns),
                     "critical_vulnerabilities": agent_profile.critical_vulnerabilities[:5],
                     "top_strengths": agent_profile.strengths[:3],
-                    "top_weaknesses": agent_profile.weaknesses[:3]
+                    "top_weaknesses": agent_profile.weaknesses[:3],
+                    "psychological_profile_snippet": agent_profile.psychological_profile[:200] + "..." if len(agent_profile.psychological_profile) > 200 else agent_profile.psychological_profile,
+                    "message": "Agent profile analysis complete!"
                 }
             )
             await self.connection_manager.broadcast_event(session.attack_id, event)
@@ -714,3 +759,120 @@ class AttackOrchestrator:
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Error in target agent profiling: %s", str(e), exc_info=True)
             session.metadata["target_profiling_error"] = str(e)
+
+    async def _run_advanced_analytics(
+        self,
+        session: AttackSessionState,
+        all_attacks: List[AttackNode]
+    ):
+        """
+        Run advanced analytics - risk scoring, trend detection, anomaly detection.
+
+        Provides actionable intelligence beyond basic profiling.
+
+        Args:
+            session: The attack session
+            all_attacks: All attacks performed
+        """
+        try:
+            logger.info("-" * 60)
+            logger.info("4. ADVANCED ANALYTICS - Starting")
+            logger.info("-" * 60)
+
+            # Initialize analytics engine
+            analytics = AdvancedAnalytics()
+
+            # Get basic stats from session
+            successful_attacks = [a for a in all_attacks if a.success]
+            attack_success_rate = len(successful_attacks) / len(all_attacks) if all_attacks else 0
+
+            # Get profile data if available
+            profile = session.metadata.get("target_agent_profile", {})
+            vulnerability_count = len(profile.get("failure_modes", []))
+            defense_strength = profile.get("defense_strength_score", 0.5)
+
+            # Unique attack types
+            unique_attack_types = list(set(a.attack_type for a in all_attacks))
+
+            # 1. Risk Score Calculation
+            logger.info("Calculating comprehensive risk score...")
+            risk_score = analytics.calculate_risk_score(
+                attack_success_rate=attack_success_rate,
+                vulnerability_count=vulnerability_count,
+                defense_strength=defense_strength,
+                attack_surface_size=len(unique_attack_types)
+            )
+            logger.info(f"✓ Risk Score: {risk_score.overall_risk:.1f}/100 ({risk_score.risk_category.upper()})")
+
+            # 2. Trend Detection
+            logger.info("Detecting trends across attack timeline...")
+            trends = analytics.detect_trends(all_attacks)
+            logger.info(f"✓ Attack Success Trend: {trends.attack_success_trend}")
+            logger.info(f"✓ Defense Effectiveness Trend: {trends.defense_effectiveness_trend}")
+
+            # 3. Anomaly Detection
+            logger.info("Scanning for behavioral anomalies...")
+            anomalies = analytics.detect_anomalies(all_attacks)
+            logger.info(f"✓ Anomalies Found: {anomalies.anomaly_count}")
+            if anomalies.anomaly_count > 0:
+                logger.info(f"  - Severity Breakdown: {anomalies.severity_breakdown}")
+
+            # 4. Attack Surface Mapping
+            logger.info("Mapping attack surface...")
+            attack_surface = analytics.map_attack_surface(all_attacks, unique_attack_types)
+            logger.info(f"✓ Attack Surface Score: {attack_surface.surface_score:.1f}/100")
+            logger.info(f"✓ Exposure Rating: {attack_surface.exposure_rating.upper()}")
+            logger.info(f"✓ Exploitable Vectors: {len(attack_surface.exploitable_vectors)}/{attack_surface.total_attack_vectors}")
+
+            # Generate comprehensive security report
+            security_report = generate_security_report(
+                risk_score=risk_score,
+                trends=trends,
+                anomalies=anomalies,
+                attack_surface=attack_surface
+            )
+
+            # Store in session metadata
+            session.metadata["advanced_analytics"] = security_report
+
+            # Log key insights
+            logger.info("Key Findings:")
+            if risk_score.risk_category in ["critical", "high"]:
+                logger.info(f"  ⚠️  RISK LEVEL: {risk_score.risk_category.upper()} - Immediate action required")
+            if anomalies.anomaly_count > 0:
+                logger.info(f"  ⚠️  {anomalies.anomaly_count} anomalies detected")
+            if trends.attack_success_trend == "increasing":
+                logger.info("  ⚠️  Attack success rate is INCREASING over time")
+            if trends.emerging_attack_types:
+                logger.info(f"  🔺 Emerging threats: {', '.join(trends.emerging_attack_types[:3])}")
+
+            logger.info("Top Mitigation Priorities:")
+            for i, priority in enumerate(risk_score.mitigation_priority[:3], 1):
+                logger.info(f"  {i}. {priority}")
+
+            # Broadcast analytics completion via WebSocket
+            from app.models import WebSocketEvent
+            event = WebSocketEvent(
+                type="advanced_analytics_complete",
+                data={
+                    "analytics_complete": True,
+                    "overall_risk": risk_score.overall_risk,
+                    "risk_category": risk_score.risk_category,
+                    "attack_surface_score": attack_surface.surface_score,
+                    "exposure_rating": attack_surface.exposure_rating,
+                    "anomaly_count": anomalies.anomaly_count,
+                    "exploitable_vectors": len(attack_surface.exploitable_vectors),
+                    "top_priorities": risk_score.mitigation_priority[:3],
+                    "key_insights": trends.insights[:3],
+                    "message": f"Advanced analytics complete - Risk: {risk_score.risk_category.upper()}"
+                }
+            )
+            await self.connection_manager.broadcast_event(session.attack_id, event)
+
+            logger.info("-" * 60)
+            logger.info("4. ADVANCED ANALYTICS - Complete")
+            logger.info("-" * 60)
+
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Error in advanced analytics: %s", str(e), exc_info=True)
+            session.metadata["advanced_analytics_error"] = str(e)
