@@ -258,44 +258,72 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-2 gap-3">
-          <Card className="glass p-4 border-border/50">
-            <div className="flex items-center justify-between mb-2">
-              <Shield className="w-4 h-4 text-green-500" />
-              <span className="text-2xl font-bold text-green-500">
-                {(profile.success_rate_against_attacks * 100).toFixed(0)}%
-              </span>
+          <Card className="glass p-4 border-border/50 relative overflow-hidden group hover:border-green-500/50 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-2">
+                <Shield className="w-4 h-4 text-green-500" />
+                <span className="text-2xl font-bold text-green-500">
+                  {(profile.success_rate_against_attacks * 100).toFixed(0)}%
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Defense Rate</p>
+              <Progress
+                value={profile.success_rate_against_attacks * 100}
+                className="h-1 mt-2"
+              />
             </div>
-            <p className="text-xs text-muted-foreground">Defense Rate</p>
           </Card>
 
-          <Card className="glass p-4 border-border/50">
-            <div className="flex items-center justify-between mb-2">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <span className="text-2xl font-bold text-red-500">
-                {(profile.overall_vulnerability_score * 100).toFixed(0)}%
-              </span>
+          <Card className="glass p-4 border-border/50 relative overflow-hidden group hover:border-red-500/50 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-2">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                <span className="text-2xl font-bold text-red-500">
+                  {(profile.overall_vulnerability_score * 100).toFixed(0)}%
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Vulnerability</p>
+              <Progress
+                value={profile.overall_vulnerability_score * 100}
+                className="h-1 mt-2"
+              />
             </div>
-            <p className="text-xs text-muted-foreground">Vulnerability</p>
           </Card>
 
-          <Card className="glass p-4 border-border/50">
-            <div className="flex items-center justify-between mb-2">
-              <Activity className="w-4 h-4 text-blue-500" />
-              <span className="text-2xl font-bold text-blue-500">
-                {(profile.behavioral_consistency * 100).toFixed(0)}%
-              </span>
+          <Card className="glass p-4 border-border/50 relative overflow-hidden group hover:border-blue-500/50 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-2">
+                <Activity className="w-4 h-4 text-blue-500" />
+                <span className="text-2xl font-bold text-blue-500">
+                  {(profile.behavioral_consistency * 100).toFixed(0)}%
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Consistency</p>
+              <Progress
+                value={profile.behavioral_consistency * 100}
+                className="h-1 mt-2"
+              />
             </div>
-            <p className="text-xs text-muted-foreground">Consistency</p>
           </Card>
 
-          <Card className="glass p-4 border-border/50">
-            <div className="flex items-center justify-between mb-2">
-              <Lock className="w-4 h-4 text-purple-500" />
-              <span className="text-2xl font-bold text-purple-500">
-                {(profile.defense_strength_score * 100).toFixed(0)}%
-              </span>
+          <Card className="glass p-4 border-border/50 relative overflow-hidden group hover:border-purple-500/50 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-2">
+                <Lock className="w-4 h-4 text-purple-500" />
+                <span className="text-2xl font-bold text-purple-500">
+                  {(profile.defense_strength_score * 100).toFixed(0)}%
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Defense Strength</p>
+              <Progress
+                value={profile.defense_strength_score * 100}
+                className="h-1 mt-2"
+              />
             </div>
-            <p className="text-xs text-muted-foreground">Defense Strength</p>
           </Card>
         </div>
       </div>
