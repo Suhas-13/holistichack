@@ -24,6 +24,7 @@ from app.mutation_bridge import MutationSystemBridge
 # Glass Box imports
 from app.batch_explainer import BatchExplainer
 from app.meta_analysis_engine import MetaAnalysisEngine
+from app.target_agent_profiler import TargetAgentProfiler
 
 import logging
 
@@ -339,6 +340,12 @@ class AttackOrchestrator:
 
             await self._run_meta_analysis(session, all_attacks, llm_client)
 
+            # ================================================================
+            # 3. TARGET AGENT PROFILER - Deep Behavioral Profile
+            # ================================================================
+
+            await self._run_target_agent_profiling(session, all_attacks, llm_client)
+
             logger.info("=" * 60)
             logger.info("GLASS BOX ANALYSIS - Complete")
             logger.info("=" * 60)
@@ -501,3 +508,167 @@ class AttackOrchestrator:
         except Exception as e:
             logger.error(f"Error in meta-analysis: {e}", exc_info=True)
             session.metadata["meta_analysis_error"] = str(e)
+
+    async def _run_target_agent_profiling(
+        self,
+        session: AttackSessionState,
+        all_attacks: List[AttackNode],
+        llm_client
+    ):
+        """
+        Run target agent profiling - deep behavioral analysis.
+
+        Creates a comprehensive profile of the agent under test by analyzing:
+        - Tool usage patterns
+        - Behavioral tendencies
+        - Failure modes and vulnerabilities
+        - Defense mechanisms
+        - Response patterns
+        """
+        try:
+            logger.info("-" * 60)
+            logger.info("3. TARGET AGENT PROFILING - Starting")
+            logger.info("-" * 60)
+
+            # Initialize target agent profiler
+            profiler = TargetAgentProfiler(llm_client=llm_client)
+
+            # Build comprehensive profile
+            logger.info("Building comprehensive behavioral profile of target agent...")
+            agent_profile = await profiler.build_profile(
+                target_endpoint=session.target_endpoint,
+                all_attacks=all_attacks
+            )
+
+            # Convert to dict for storage
+            profile_dict = {
+                "target_endpoint": agent_profile.target_endpoint,
+                "profile_created_at": agent_profile.profile_created_at.isoformat(),
+                "total_attacks_analyzed": agent_profile.total_attacks_analyzed,
+
+                # Tool usage
+                "tool_usage_patterns": [
+                    {
+                        "tool_name": p.tool_name,
+                        "total_invocations": p.total_invocations,
+                        "success_rate_when_used": p.success_rate_when_used,
+                        "purpose": p.purpose,
+                        "effectiveness": p.effectiveness
+                    }
+                    for p in agent_profile.tool_usage_patterns
+                ],
+                "total_tool_calls": agent_profile.total_tool_calls,
+                "most_used_tools": agent_profile.most_used_tools,
+
+                # Behavioral patterns
+                "behavior_patterns": [
+                    {
+                        "pattern_name": b.pattern_name,
+                        "description": b.description,
+                        "observed_count": b.observed_count,
+                        "pattern_type": b.pattern_type,
+                        "confidence": b.confidence,
+                        "exploitability": b.exploitability,
+                        "implications": b.implications
+                    }
+                    for b in agent_profile.behavior_patterns
+                ],
+                "dominant_behaviors": agent_profile.dominant_behaviors,
+
+                # Failure modes
+                "failure_modes": [
+                    {
+                        "failure_type": f.failure_type,
+                        "description": f.description,
+                        "occurrence_count": f.occurrence_count,
+                        "success_rate": f.success_rate,
+                        "severity": f.severity,
+                        "common_triggers": f.common_triggers,
+                        "mitigation_suggestions": f.mitigation_suggestions
+                    }
+                    for f in agent_profile.failure_modes
+                ],
+                "critical_vulnerabilities": agent_profile.critical_vulnerabilities,
+                "overall_vulnerability_score": agent_profile.overall_vulnerability_score,
+
+                # Defense mechanisms
+                "defense_mechanisms": [
+                    {
+                        "mechanism_type": d.mechanism_type,
+                        "description": d.description,
+                        "detection_rate": d.detection_rate,
+                        "strength": d.strength,
+                        "known_bypasses": d.known_bypasses,
+                        "bypass_success_rate": d.bypass_success_rate
+                    }
+                    for d in agent_profile.defense_mechanisms
+                ],
+                "defense_strength_score": agent_profile.defense_strength_score,
+
+                # Response patterns
+                "response_patterns": {
+                    "avg_response_length": agent_profile.response_patterns.avg_response_length if agent_profile.response_patterns else 0,
+                    "tone": agent_profile.response_patterns.tone if agent_profile.response_patterns else "unknown",
+                    "personality_traits": agent_profile.response_patterns.personality_traits if agent_profile.response_patterns else [],
+                    "common_phrases": agent_profile.response_patterns.common_phrases[:5] if agent_profile.response_patterns else []
+                } if agent_profile.response_patterns else {},
+
+                # LLM insights
+                "psychological_profile": agent_profile.psychological_profile,
+                "strengths": agent_profile.strengths,
+                "weaknesses": agent_profile.weaknesses,
+                "recommendations": agent_profile.recommendations,
+                "overall_assessment": agent_profile.overall_assessment,
+
+                # Statistics
+                "success_rate_against_attacks": agent_profile.success_rate_against_attacks,
+                "behavioral_consistency": agent_profile.behavioral_consistency,
+                "consistency_score": agent_profile.consistency_score
+            }
+
+            # Store in session
+            session.metadata["target_agent_profile"] = profile_dict
+
+            # Log key findings
+            logger.info("Target Agent Profile Summary:")
+            logger.info(f"  - Defense Success Rate: {agent_profile.success_rate_against_attacks:.1%}")
+            logger.info(f"  - Vulnerability Score: {agent_profile.overall_vulnerability_score:.1%}")
+            logger.info(f"  - Behavior Patterns: {len(agent_profile.behavior_patterns)}")
+            logger.info(f"  - Failure Modes: {len(agent_profile.failure_modes)}")
+            logger.info(f"  - Defense Mechanisms: {len(agent_profile.defense_mechanisms)}")
+            logger.info(f"  - Tools Used: {len(agent_profile.tool_usage_patterns)}")
+
+            if agent_profile.critical_vulnerabilities:
+                logger.info("Critical Vulnerabilities:")
+                for vuln in agent_profile.critical_vulnerabilities[:3]:
+                    logger.info(f"  - {vuln}")
+
+            if agent_profile.strengths:
+                logger.info("Key Strengths:")
+                for strength in agent_profile.strengths[:3]:
+                    logger.info(f"  + {strength}")
+
+            # Broadcast profile completion via WebSocket
+            from app.models import WebSocketEvent
+            event = WebSocketEvent(
+                type="glass_box_batch_complete",  # Reuse this event type for now
+                data={
+                    "profile_complete": True,
+                    "defense_success_rate": agent_profile.success_rate_against_attacks,
+                    "vulnerability_score": agent_profile.overall_vulnerability_score,
+                    "behavior_patterns_count": len(agent_profile.behavior_patterns),
+                    "failure_modes_count": len(agent_profile.failure_modes),
+                    "critical_vulnerabilities": agent_profile.critical_vulnerabilities[:5],
+                    "top_strengths": agent_profile.strengths[:3],
+                    "top_weaknesses": agent_profile.weaknesses[:3]
+                }
+            )
+            await self.connection_manager.broadcast_event(session.attack_id, event)
+
+            logger.info("-" * 60)
+            logger.info("3. TARGET AGENT PROFILING - Complete")
+            logger.info("-" * 60)
+
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Error in target agent profiling: %s", str(e), exc_info=True)
+            session.metadata["target_profiling_error"] = str(e)
