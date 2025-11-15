@@ -27,10 +27,11 @@ try:
         RiskCategory,
         AttackStyle,
         ClusterManager,
-        PromptMutator,
-        LlamaGuardEvaluator
+        PromptMutator
     )
     from api_clients import HolisticAgentClient, OpenRouterClient, TogetherAIClient
+    # Import LLMJudgeEvaluator from main.py
+    from main import LLMJudgeEvaluator
 except ImportError as e:
     logging.error(f"Failed to import mutation system modules: {e}")
     logging.error(f"Mutations path: {mutations_path}")
@@ -56,7 +57,8 @@ class MutationSystemBridge:
 
         # Initialize mutation system components
         self.mutator = PromptMutator()
-        self.evaluator = LlamaGuardEvaluator()
+        # Use LLMJudgeEvaluator with Claude Haiku instead of LlamaGuardEvaluator
+        self.evaluator = LLMJudgeEvaluator(model_id="anthropic/claude-haiku-4.5")
         self.cluster_manager = ClusterManager()
 
         # Initialize attacker client (OpenRouter with Qwen)
@@ -68,14 +70,16 @@ class MutationSystemBridge:
     async def execute_seed_attacks(
         self,
         session: AttackSessionState,
-        seed_prompts: List[Dict[str, Any]]
+        seed_prompts: List[Dict[str, Any]],
+        batch_size: int = 20
     ) -> List[AttackNode]:
         """
-        Execute seed attacks using the mutation system.
+        Execute seed attacks using the mutation system in parallel batches.
 
         Args:
             session: The attack session state
             seed_prompts: List of seed attack dictionaries with prompt, attack_style, risk_category
+            batch_size: Number of attacks to run in parallel
 
         Returns:
             List of completed AttackNode objects
@@ -83,13 +87,42 @@ class MutationSystemBridge:
         results = []
         defender_client = HolisticAgentClient(
             self._extract_agent_name(session.target_endpoint))
-
-        for i, seed_data in enumerate(seed_prompts):
+        
+        # Process seeds in parallel batches
+        for batch_start in range(0, len(seed_prompts), batch_size):
+            batch_end = min(batch_start + batch_size, len(seed_prompts))
+            batch = seed_prompts[batch_start:batch_end]
+            
+            logger.info(f"Executing seed batch {batch_start//batch_size + 1}: {len(batch)} attacks in parallel")
+            
             # Check if we should stop
             if session.should_stop:
                 logger.info(f"Stopping seed attack execution for {session.attack_id}")
                 break
+                
+            # Create tasks for parallel execution
+            tasks = []
+            for i, seed_data in enumerate(batch, start=batch_start):
+                task = self._execute_single_seed_attack(
+                    session, seed_data, i, defender_client
+                )
+                tasks.append(task)
             
+            # Execute batch in parallel
+            batch_results = await asyncio.gather(*tasks)
+            results.extend([r for r in batch_results if r is not None])
+            
+        return results
+    
+    async def _execute_single_seed_attack(
+        self,
+        session: AttackSessionState,
+        seed_data: Dict[str, Any],
+        index: int,
+        defender_client: HolisticAgentClient
+    ) -> Optional[AttackNode]:
+        """Execute a single seed attack asynchronously"""
+        try:
             # Parse attack_style and risk_category to enums if they're strings
             attack_style = seed_data.get("attack_style")
             if isinstance(attack_style, str):
@@ -107,7 +140,7 @@ class MutationSystemBridge:
 
             # Create mutation system node
             mutation_node = MutationAttackNode(
-                id=f"seed_{i}",
+                id=f"seed_{index}",
                 prompt=seed_data["prompt"],
                 attack_style=attack_style,
                 risk_category=risk_category,
@@ -139,26 +172,27 @@ class MutationSystemBridge:
                 session.attack_id
             )
 
-            results.append(completed_node)
-
-            # Small delay to avoid rate limiting
-            await asyncio.sleep(0.5)
-
-        return results
+            return completed_node
+            
+        except Exception as e:
+            logger.error(f"Error executing seed attack {index}: {e}")
+            return None
 
     async def evolve_attacks(
         self,
         session: AttackSessionState,
         parent_nodes: List[AttackNode],
-        num_mutations: int = 5
+        num_mutations: int = 5,
+        batch_size: int = 20
     ) -> List[AttackNode]:
         """
-        Evolve attacks using mutations from parent nodes.
+        Evolve attacks using mutations from parent nodes in parallel batches.
 
         Args:
             session: The attack session state
             parent_nodes: Parent nodes to mutate
             num_mutations: Number of mutations to generate
+            batch_size: Number of mutations to run in parallel
 
         Returns:
             List of evolved AttackNode objects
@@ -172,12 +206,42 @@ class MutationSystemBridge:
             (node.generation for node in parent_nodes), default=0)
         new_generation = max_generation + 1
 
-        for i in range(num_mutations):
+        # Process mutations in parallel batches
+        for batch_start in range(0, num_mutations, batch_size):
             # Check if we should stop
             if session.should_stop:
                 logger.info(f"Stopping evolution for {session.attack_id}")
                 break
+                
+            batch_end = min(batch_start + batch_size, num_mutations)
+            batch_indices = list(range(batch_start, batch_end))
             
+            logger.info(f"Evolving mutation batch: {len(batch_indices)} mutations in parallel")
+            
+            # Create tasks for parallel execution
+            tasks = []
+            for i in batch_indices:
+                task = self._evolve_single_mutation(
+                    session, parent_nodes, i, new_generation, defender_client
+                )
+                tasks.append(task)
+            
+            # Execute batch in parallel
+            batch_results = await asyncio.gather(*tasks)
+            results.extend([r for r in batch_results if r is not None])
+            
+        return results
+    
+    async def _evolve_single_mutation(
+        self,
+        session: AttackSessionState,
+        parent_nodes: List[AttackNode],
+        mutation_index: int,
+        new_generation: int,
+        defender_client: HolisticAgentClient
+    ) -> Optional[AttackNode]:
+        """Evolve a single mutation asynchronously"""
+        try:
             # Select random parent
             parent = self._select_parent(parent_nodes)
             parent_mutation_node = self._backend_to_mutation_node(parent)
@@ -185,7 +249,7 @@ class MutationSystemBridge:
             # Select random mutation style
             mutation_style = self._select_mutation_style(parent)
             
-            logger.info(f"🧬 Evolving Gen{new_generation} Mut{i}: Parent={parent.node_id} (fitness={parent.fitness_score:.2f}), Style={mutation_style.value}, Risk={parent_mutation_node.risk_category.value if parent_mutation_node.risk_category else 'Unknown'}")
+            logger.info(f"🧬 Evolving Gen{new_generation} Mut{mutation_index}: Parent={parent.node_id} (fitness={parent.fitness_score:.2f}), Style={mutation_style.value}, Risk={parent_mutation_node.risk_category.value if parent_mutation_node.risk_category else 'Unknown'}")
 
             # Generate mutation
             mutated_prompt = await self.mutator.mutate(
@@ -200,7 +264,7 @@ class MutationSystemBridge:
 
             # Create new mutation node
             mutation_node = MutationAttackNode(
-                id=f"gen{new_generation}_mut{i}",
+                id=f"gen{new_generation}_mut{mutation_index}",
                 prompt=mutated_prompt,
                 parents=[parent.node_id],
                 attack_style=mutation_style,
@@ -234,12 +298,11 @@ class MutationSystemBridge:
                 session.attack_id
             )
 
-            results.append(completed_node)
-
-            # Small delay
-            await asyncio.sleep(0.5)
-
-        return results
+            return completed_node
+            
+        except Exception as e:
+            logger.error(f"Error evolving mutation {mutation_index}: {e}")
+            return None
 
     async def _execute_mutation_attack(
         self,
@@ -260,7 +323,7 @@ class MutationSystemBridge:
             mutation_node.response = response
             backend_node.response = response
 
-            # Evaluate with Llama Guard
+            # Evaluate with LLM Judge (Claude Haiku)
             is_unsafe, score, categories = await self.evaluator.evaluate(
                 mutation_node.prompt,
                 response
@@ -268,11 +331,11 @@ class MutationSystemBridge:
 
             # Update nodes
             mutation_node.success = is_unsafe
-            mutation_node.llama_guard_score = score
+            mutation_node.llama_guard_score = score  # Keep for compatibility
             mutation_node.fitness_score = score
 
             backend_node.success = is_unsafe
-            backend_node.llama_guard_score = score
+            backend_node.llama_guard_score = score  # Keep for compatibility
             backend_node.fitness_score = score
             backend_node.status = "success" if is_unsafe else "failure"
 
@@ -284,11 +347,11 @@ class MutationSystemBridge:
 
             # Create trace
             backend_node.full_trace = AttackTrace(
-                verification_prompt_to_llama_guard=f"Evaluated with Llama Guard",
+                verification_prompt_to_llama_guard=f"Evaluated with LLM Judge (Claude Haiku)",
                 verification_response_raw=f"Score: {score}, Unsafe: {is_unsafe}",
                 judgement="success" if is_unsafe else "failure",
                 verification_metadata={
-                    "llama_guard_score": score,
+                    "llm_judge_score": score,  # Claude Haiku judge score
                     "violated_categories": categories
                 }
             )
