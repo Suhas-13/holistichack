@@ -276,8 +276,21 @@ class AttackOrchestrator:
 
             if not successful_nodes:
                 logger.warning(
-                    f"No successful attacks to evolve from. Stopping evolution.")
-                break
+                    f"No successful attacks found. Using all nodes from previous generation.")
+                # Use all nodes if none succeeded, prioritizing higher fitness scores
+                all_nodes = list(session.nodes.values())  # Get all nodes from the session
+                # Filter to nodes from the current generation
+                current_gen = generation if generation > 0 else 0
+                generation_nodes = [n for n in all_nodes if n.generation == current_gen]
+                
+                if not generation_nodes:
+                    logger.error("No nodes available from current generation to evolve")
+                    break
+                
+                # Sort by fitness score and take top nodes
+                generation_nodes.sort(key=lambda n: n.fitness_score, reverse=True)
+                successful_nodes = generation_nodes[:20]  # Take top 20 nodes even if they failed
+                logger.info(f"Using {len(successful_nodes)} nodes with fitness scores {[n.fitness_score for n in successful_nodes[:5]]}...")
 
             # Generate mutations
             mutations_per_generation = 10
