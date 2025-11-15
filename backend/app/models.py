@@ -1,10 +1,10 @@
 """
 Core data models for the red-teaming evolution system.
 """
+from datetime import datetime, timezone
+from uuid import uuid4
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
-from datetime import datetime
-from uuid import UUID, uuid4
 
 
 # ============================================================================
@@ -40,7 +40,7 @@ class TranscriptTurn(BaseModel):
     role: Literal["attacker",
                   "model"] = Field(..., description="Who is speaking")
     content: str = Field(..., description="The message content")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class AttackTrace(BaseModel):
@@ -91,7 +91,7 @@ class AttackNode(BaseModel):
         default_factory=dict, description="Additional metadata")
 
     # Metadata
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     cost_usd: float = 0.0
     latency_ms: float = 0.0
@@ -107,7 +107,7 @@ class Cluster(BaseModel):
         default_factory=list,
         description="If this cluster evolved from others"
     )
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class EvolutionLink(BaseModel):
@@ -117,7 +117,7 @@ class EvolutionLink(BaseModel):
                                        description="Parent nodes that bred")
     target_node_id: str = Field(..., description="Child node created")
     evolution_type: Literal["breeding", "mutation", "crossover"] = "breeding"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ============================================================================
@@ -178,7 +178,9 @@ class WebSocketEvent(BaseModel):
         "node_add",
         "node_update",
         "evolution_link_add",
-        "attack_complete"
+        "attack_complete",
+        "glass_box_batch_complete",
+        "glass_box_breakthroughs"
     ]
     data: Dict[str, Any]
 

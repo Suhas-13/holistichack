@@ -31,6 +31,12 @@ from app.state_manager import StateManager, AttackSessionState
 from app.websocket_manager import ConnectionManager
 from app.agent_mapper import AgentMapper
 from app.mutation_bridge import MutationSystemBridge
+
+# Glass Box imports
+from app.batch_explainer import BatchExplainer
+from app.meta_analysis_engine import MetaAnalysisEngine
+from app.target_agent_profiler import TargetAgentProfiler
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -296,6 +302,10 @@ class AttackOrchestrator:
         """
         Phase 5: Complete the attack and broadcast final results.
 
+        Now includes Glass Box analysis:
+        - Batch explanation for explainability at scale
+        - Meta-analysis across all agents
+
         Args:
             session: The attack session
         """
@@ -304,8 +314,17 @@ class AttackOrchestrator:
         # Export results in mutation system format
         results = self.mutation_bridge.export_results(session)
 
-        session.status = "completed"
         session.metadata["final_summary"] = results["summary"]
+
+        # ====================================================================
+        # GLASS BOX ANALYSIS - Explainability at Scale & Meta-Analysis
+        # ====================================================================
+
+        await self._run_glass_box_analysis(session)
+
+        # ====================================================================
+
+        session.status = "completed"
         await self.state_manager.update_session(session)
 
         # Broadcast attack complete
@@ -313,6 +332,385 @@ class AttackOrchestrator:
             attack_id=session.attack_id,
             message=f"Attack complete! Success rate: {results['summary']['success_rate']}%. "
             f"Total: {results['summary']['total_attacks']} attacks, "
-            f"Successful: {results['summary']['successful_attacks']}",
+            f"Successful: {results['summary']['successful_attacks']}. "
+            f"Glass Box analysis complete.",
             results_url=f"/api/v1/results/{session.attack_id}"
         )
+
+    async def _run_glass_box_analysis(self, session: AttackSessionState):
+        """
+        Run Glass Box analysis: batch explanation + meta-analysis.
+
+        This provides explainability at scale and system-wide insights.
+        Uses map-reduce to process efficiently (90% cost savings).
+
+        Args:
+            session: The attack session
+        """
+        try:
+            logger.info("=" * 60)
+            logger.info("GLASS BOX ANALYSIS - Starting")
+            logger.info("=" * 60)
+
+            # Get all attacks
+            all_attacks = session.nodes
+
+            if not all_attacks:
+                logger.warning("No attacks to analyze")
+                return
+
+            logger.info(f"Analyzing {len(all_attacks)} attacks")
+
+            # Initialize LLM client for analysis (using Claude Haiku for efficiency)
+            # Import here to avoid circular dependencies
+            sys.path.insert(0, os.path.abspath(os.path.join(
+                os.path.dirname(__file__), '..', '..', 'mutations')))
+            from api_clients import OpenRouterClient
+
+            llm_client = OpenRouterClient(model_id="anthropic/claude-haiku-4.5")
+            logger.info(f"Initialized LLM client: {llm_client}")
+
+            # ================================================================
+            # 1. BATCH EXPLANATION - Explainability at Scale
+            # ================================================================
+
+            await self._run_batch_explanation(session, all_attacks, llm_client)
+
+            # ================================================================
+            # 2. META-ANALYSIS - System-Wide Insights
+            # ================================================================
+
+            await self._run_meta_analysis(session, all_attacks, llm_client)
+
+            # ================================================================
+            # 3. TARGET AGENT PROFILER - Deep Behavioral Profile
+            # ================================================================
+
+            await self._run_target_agent_profiling(session, all_attacks, llm_client)
+
+            logger.info("=" * 60)
+            logger.info("GLASS BOX ANALYSIS - Complete")
+            logger.info("=" * 60)
+
+        except Exception as e:
+            logger.error(f"Error in glass box analysis: {e}", exc_info=True)
+            # Don't fail the entire attack session if analysis fails
+            session.metadata["glass_box_error"] = str(e)
+
+    async def _run_batch_explanation(
+        self,
+        session: AttackSessionState,
+        all_attacks: List[AttackNode],
+        llm_client
+    ):
+        """
+        Run batch explanation using map-reduce.
+
+        Groups similar attacks and extracts common patterns.
+        90% cost reduction vs individual explanations.
+        """
+        try:
+            logger.info("-" * 60)
+            logger.info("1. BATCH EXPLANATION - Starting")
+            logger.info("-" * 60)
+
+            # Initialize batch explainer with efficient settings
+            explainer = BatchExplainer(
+                llm_client=llm_client,
+                batch_size=10,      # 10 attacks per batch
+                max_parallel=5      # 5 batches at once
+            )
+
+            # Run batch explanation with auto grouping strategy
+            logger.info("Running map-reduce batch explanation...")
+            batch_insights = await explainer.explain_at_scale(
+                attacks=all_attacks,
+                grouping_strategy="auto"  # Smart grouping
+            )
+
+            # Store insights in session
+            session.metadata["batch_insights"] = batch_insights
+
+            # Log results
+            logger.info("Batch Explanation Results:")
+            logger.info(f"  - Total attacks analyzed: {batch_insights['total_attacks_analyzed']}")
+            logger.info(f"  - Batches processed: {batch_insights['total_batches']}")
+            logger.info(f"  - LLM calls saved: {batch_insights['processing_efficiency']['llm_calls_saved']}")
+            logger.info(f"  - Cost reduction: {batch_insights['processing_efficiency']['cost_reduction_percent']:.1f}%")
+
+            # Broadcast top patterns via WebSocket
+            from app.models import WebSocketEvent
+            event = WebSocketEvent(
+                type="glass_box_batch_complete",
+                data={
+                    "total_attacks": batch_insights['total_attacks_analyzed'],
+                    "batches_processed": batch_insights['total_batches'],
+                    "top_success_factors": batch_insights['top_success_factors'][:5],
+                    "top_patterns": batch_insights['top_patterns'][:5],
+                    "efficiency": batch_insights['processing_efficiency']
+                }
+            )
+            await self.connection_manager.broadcast_event(session.attack_id, event)
+
+            logger.info("Top 3 Success Factors:")
+            for i, factor in enumerate(batch_insights['top_success_factors'][:3], 1):
+                logger.info(f"  {i}. {factor['factor']} (frequency: {factor['frequency']})")
+
+            logger.info("-" * 60)
+            logger.info("1. BATCH EXPLANATION - Complete")
+            logger.info("-" * 60)
+
+        except Exception as e:
+            logger.error(f"Error in batch explanation: {e}", exc_info=True)
+            session.metadata["batch_explanation_error"] = str(e)
+
+    async def _run_meta_analysis(
+        self,
+        session: AttackSessionState,
+        all_attacks: List[AttackNode],
+        llm_client
+    ):
+        """
+        Run meta-analysis across all agents.
+
+        Analyzes each agent independently (MAP) then synthesizes
+        cross-agent insights (REDUCE).
+        """
+        try:
+            logger.info("-" * 60)
+            logger.info("2. META-ANALYSIS - Starting")
+            logger.info("-" * 60)
+
+            # Initialize meta-analysis engine
+            engine = MetaAnalysisEngine(llm_client=llm_client)
+
+            # Run full system analysis
+            logger.info("Running map-reduce meta-analysis...")
+            system_insights = await engine.analyze_system(
+                all_attacks=all_attacks,
+                agent_memories=None,  # Not using agent memory yet
+                num_agents=12         # Default number of agents
+            )
+
+            # Convert to dict for storage
+            insights_dict = {
+                "most_innovative_agent": {
+                    "agent_id": system_insights.most_innovative_agent.agent_id,
+                    "category": system_insights.most_innovative_agent.category,
+                    "novel_techniques": system_insights.most_innovative_agent.novel_techniques_discovered,
+                    "success_rate": system_insights.most_innovative_agent.success_rate
+                },
+                "most_successful_agent": {
+                    "agent_id": system_insights.most_successful_agent.agent_id,
+                    "category": system_insights.most_successful_agent.category,
+                    "success_rate": system_insights.most_successful_agent.success_rate,
+                    "avg_fitness": system_insights.most_successful_agent.avg_fitness
+                },
+                "breakthrough_moments": system_insights.breakthrough_moments,
+                "target_profile": system_insights.target_profile,
+                "technique_rankings": system_insights.technique_effectiveness_ranking[:10],  # Top 10
+                "evolution_insights": system_insights.evolution_insights
+            }
+
+            # Store in session
+            session.metadata["meta_analysis"] = insights_dict
+
+            # Log results
+            logger.info("Meta-Analysis Results:")
+            logger.info(f"  - Most Innovative Agent: #{insights_dict['most_innovative_agent']['agent_id']} "
+                       f"({insights_dict['most_innovative_agent']['novel_techniques']} novel techniques)")
+            logger.info(f"  - Most Successful Agent: #{insights_dict['most_successful_agent']['agent_id']} "
+                       f"({insights_dict['most_successful_agent']['success_rate']:.1%} success rate)")
+            logger.info(f"  - Breakthrough Moments: {len(insights_dict['breakthrough_moments'])}")
+            logger.info(f"  - Target Vulnerability Score: "
+                       f"{insights_dict['target_profile']['vulnerability_score']:.1%}")
+
+            # Broadcast breakthrough moments
+            if insights_dict['breakthrough_moments']:
+                from app.models import WebSocketEvent
+                event = WebSocketEvent(
+                    type="glass_box_breakthroughs",
+                    data={
+                        "breakthroughs": insights_dict['breakthrough_moments'][:5],
+                        "target_profile": insights_dict['target_profile']
+                    }
+                )
+                await self.connection_manager.broadcast_event(session.attack_id, event)
+
+            # Log evolution insights
+            if insights_dict['evolution_insights']:
+                logger.info("Evolution Insights:")
+                for i, insight in enumerate(insights_dict['evolution_insights'], 1):
+                    logger.info(f"  {i}. {insight}")
+
+            logger.info("-" * 60)
+            logger.info("2. META-ANALYSIS - Complete")
+            logger.info("-" * 60)
+
+        except Exception as e:
+            logger.error(f"Error in meta-analysis: {e}", exc_info=True)
+            session.metadata["meta_analysis_error"] = str(e)
+
+    async def _run_target_agent_profiling(
+        self,
+        session: AttackSessionState,
+        all_attacks: List[AttackNode],
+        llm_client
+    ):
+        """
+        Run target agent profiling - deep behavioral analysis.
+
+        Creates a comprehensive profile of the agent under test by analyzing:
+        - Tool usage patterns
+        - Behavioral tendencies
+        - Failure modes and vulnerabilities
+        - Defense mechanisms
+        - Response patterns
+        """
+        try:
+            logger.info("-" * 60)
+            logger.info("3. TARGET AGENT PROFILING - Starting")
+            logger.info("-" * 60)
+
+            # Initialize target agent profiler
+            profiler = TargetAgentProfiler(llm_client=llm_client)
+
+            # Build comprehensive profile
+            logger.info("Building comprehensive behavioral profile of target agent...")
+            agent_profile = await profiler.build_profile(
+                target_endpoint=session.target_endpoint,
+                all_attacks=all_attacks
+            )
+
+            # Convert to dict for storage
+            profile_dict = {
+                "target_endpoint": agent_profile.target_endpoint,
+                "profile_created_at": agent_profile.profile_created_at.isoformat(),
+                "total_attacks_analyzed": agent_profile.total_attacks_analyzed,
+
+                # Tool usage
+                "tool_usage_patterns": [
+                    {
+                        "tool_name": p.tool_name,
+                        "total_invocations": p.total_invocations,
+                        "success_rate_when_used": p.success_rate_when_used,
+                        "purpose": p.purpose,
+                        "effectiveness": p.effectiveness
+                    }
+                    for p in agent_profile.tool_usage_patterns
+                ],
+                "total_tool_calls": agent_profile.total_tool_calls,
+                "most_used_tools": agent_profile.most_used_tools,
+
+                # Behavioral patterns
+                "behavior_patterns": [
+                    {
+                        "pattern_name": b.pattern_name,
+                        "description": b.description,
+                        "observed_count": b.observed_count,
+                        "pattern_type": b.pattern_type,
+                        "confidence": b.confidence,
+                        "exploitability": b.exploitability,
+                        "implications": b.implications
+                    }
+                    for b in agent_profile.behavior_patterns
+                ],
+                "dominant_behaviors": agent_profile.dominant_behaviors,
+
+                # Failure modes
+                "failure_modes": [
+                    {
+                        "failure_type": f.failure_type,
+                        "description": f.description,
+                        "occurrence_count": f.occurrence_count,
+                        "success_rate": f.success_rate,
+                        "severity": f.severity,
+                        "common_triggers": f.common_triggers,
+                        "mitigation_suggestions": f.mitigation_suggestions
+                    }
+                    for f in agent_profile.failure_modes
+                ],
+                "critical_vulnerabilities": agent_profile.critical_vulnerabilities,
+                "overall_vulnerability_score": agent_profile.overall_vulnerability_score,
+
+                # Defense mechanisms
+                "defense_mechanisms": [
+                    {
+                        "mechanism_type": d.mechanism_type,
+                        "description": d.description,
+                        "detection_rate": d.detection_rate,
+                        "strength": d.strength,
+                        "known_bypasses": d.known_bypasses,
+                        "bypass_success_rate": d.bypass_success_rate
+                    }
+                    for d in agent_profile.defense_mechanisms
+                ],
+                "defense_strength_score": agent_profile.defense_strength_score,
+
+                # Response patterns
+                "response_patterns": {
+                    "avg_response_length": agent_profile.response_patterns.avg_response_length if agent_profile.response_patterns else 0,
+                    "tone": agent_profile.response_patterns.tone if agent_profile.response_patterns else "unknown",
+                    "personality_traits": agent_profile.response_patterns.personality_traits if agent_profile.response_patterns else [],
+                    "common_phrases": agent_profile.response_patterns.common_phrases[:5] if agent_profile.response_patterns else []
+                } if agent_profile.response_patterns else {},
+
+                # LLM insights
+                "psychological_profile": agent_profile.psychological_profile,
+                "strengths": agent_profile.strengths,
+                "weaknesses": agent_profile.weaknesses,
+                "recommendations": agent_profile.recommendations,
+                "overall_assessment": agent_profile.overall_assessment,
+
+                # Statistics
+                "success_rate_against_attacks": agent_profile.success_rate_against_attacks,
+                "behavioral_consistency": agent_profile.behavioral_consistency,
+                "consistency_score": agent_profile.consistency_score
+            }
+
+            # Store in session
+            session.metadata["target_agent_profile"] = profile_dict
+
+            # Log key findings
+            logger.info("Target Agent Profile Summary:")
+            logger.info(f"  - Defense Success Rate: {agent_profile.success_rate_against_attacks:.1%}")
+            logger.info(f"  - Vulnerability Score: {agent_profile.overall_vulnerability_score:.1%}")
+            logger.info(f"  - Behavior Patterns: {len(agent_profile.behavior_patterns)}")
+            logger.info(f"  - Failure Modes: {len(agent_profile.failure_modes)}")
+            logger.info(f"  - Defense Mechanisms: {len(agent_profile.defense_mechanisms)}")
+            logger.info(f"  - Tools Used: {len(agent_profile.tool_usage_patterns)}")
+
+            if agent_profile.critical_vulnerabilities:
+                logger.info("Critical Vulnerabilities:")
+                for vuln in agent_profile.critical_vulnerabilities[:3]:
+                    logger.info(f"  - {vuln}")
+
+            if agent_profile.strengths:
+                logger.info("Key Strengths:")
+                for strength in agent_profile.strengths[:3]:
+                    logger.info(f"  + {strength}")
+
+            # Broadcast profile completion via WebSocket
+            from app.models import WebSocketEvent
+            event = WebSocketEvent(
+                type="glass_box_batch_complete",  # Reuse this event type for now
+                data={
+                    "profile_complete": True,
+                    "defense_success_rate": agent_profile.success_rate_against_attacks,
+                    "vulnerability_score": agent_profile.overall_vulnerability_score,
+                    "behavior_patterns_count": len(agent_profile.behavior_patterns),
+                    "failure_modes_count": len(agent_profile.failure_modes),
+                    "critical_vulnerabilities": agent_profile.critical_vulnerabilities[:5],
+                    "top_strengths": agent_profile.strengths[:3],
+                    "top_weaknesses": agent_profile.weaknesses[:3]
+                }
+            )
+            await self.connection_manager.broadcast_event(session.attack_id, event)
+
+            logger.info("-" * 60)
+            logger.info("3. TARGET AGENT PROFILING - Complete")
+            logger.info("-" * 60)
+
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Error in target agent profiling: %s", str(e), exc_info=True)
+            session.metadata["target_profiling_error"] = str(e)

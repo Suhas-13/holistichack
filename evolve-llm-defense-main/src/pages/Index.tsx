@@ -3,6 +3,7 @@ import ConfigPanel from "@/components/ConfigPanel";
 import EvolutionCanvas from "@/components/EvolutionCanvas";
 import NodeDetailsPanel from "@/components/NodeDetailsPanel";
 import ResultsPanel from "@/components/ResultsPanel";
+import AgentProfilePanel from "@/components/AgentProfilePanel";
 import {
   AttackNode,
   ClusterData,
@@ -26,6 +27,7 @@ const CLUSTER_COLORS = [
 const Index = () => {
   const [selectedNode, setSelectedNode] = useState<AttackNode | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [showAgentProfile, setShowAgentProfile] = useState(false);
   const [clusters, setClusters] = useState<ClusterData[]>([]);
   const [nodes, setNodes] = useState<Map<string, AttackNode>>(new Map());
   const [isRunning, setIsRunning] = useState(false);
@@ -309,12 +311,35 @@ const Index = () => {
             </h1>
             <p className="text-sm text-muted-foreground">Evolving LLM jailbreak attacks</p>
           </div>
-          <button
-            onClick={() => setShowResults(!showResults)}
-            className="glass px-6 py-2 rounded-lg font-medium text-foreground hover:bg-primary/10 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
-          >
-            {showResults ? "Hide Results" : "View Results"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setShowResults(false);
+                setShowAgentProfile(!showAgentProfile);
+              }}
+              disabled={!attackId || isRunning}
+              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
+                showAgentProfile
+                  ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
+                  : "hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20"
+              } ${!attackId || isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              🔬 Agent Profile
+            </button>
+            <button
+              onClick={() => {
+                setShowAgentProfile(false);
+                setShowResults(!showResults);
+              }}
+              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
+                showResults
+                  ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
+                  : "hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20"
+              }`}
+            >
+              {showResults ? "Hide Results" : "View Results"}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -336,8 +361,13 @@ const Index = () => {
           />
         </div>
 
-        {/* Side Panel - Node Details or Results */}
-        {showResults ? (
+        {/* Side Panel - Agent Profile, Node Details, or Results */}
+        {showAgentProfile ? (
+          <AgentProfilePanel
+            attackId={attackId}
+            onClose={() => setShowAgentProfile(false)}
+          />
+        ) : showResults ? (
           <ResultsPanel clusters={clustersWithNodes} attackId={attackId} />
         ) : selectedNode ? (
           <NodeDetailsPanel

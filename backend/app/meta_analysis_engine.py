@@ -12,7 +12,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 import statistics
 
 from app.glass_box_models import (
@@ -55,7 +55,7 @@ class AgentAnalysisResult:
     strongest_techniques: List[Tuple[str, float]] = field(default_factory=list)
     weakest_techniques: List[Tuple[str, float]] = field(default_factory=list)
 
-    analyzed_at: datetime = field(default_factory=datetime.utcnow)
+    analyzed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
@@ -76,7 +76,7 @@ class BreakthroughMoment:
     after_metric: float
     improvement_percent: float
 
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class MetaAnalysisEngine:

@@ -9,16 +9,11 @@ This enables explainability at scale without drowning in LLM costs.
 """
 import asyncio
 import logging
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
-from app.glass_box_models import (
-    AttackExplanation,
-    PatternAnalysis,
-    AgentInsight
-)
 from app.models import AttackNode
 
 logger = logging.getLogger(__name__)
@@ -45,13 +40,13 @@ class BatchExplanationResult:
     identified_patterns: List[str] = field(default_factory=list)
 
     # Per-attack explanations (optional - can be summarized)
-    individual_explanations: Dict[str, AttackExplanation] = field(default_factory=dict)
+    individual_explanations: Dict[str, Any] = field(default_factory=dict)
 
     # Batch-level insights
     batch_insight: str = ""
     confidence: float = 0.0
 
-    processed_at: datetime = field(default_factory=datetime.utcnow)
+    processed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class BatchExplainer:
@@ -97,11 +92,11 @@ class BatchExplainer:
         Returns:
             Comprehensive insights across all attacks
         """
-        logger.info(f"Starting map-reduce explanation for {len(attacks)} attacks")
+        logger.info("Starting map-reduce explanation for %d attacks", len(attacks))
 
         # MAP PHASE: Create batches
         batches = self._create_batches(attacks, grouping_strategy)
-        logger.info(f"Created {len(batches)} batches for parallel processing")
+        logger.info("Created %d batches for parallel processing", len(batches))
 
         # Process batches in parallel (with concurrency limit)
         batch_results = []
@@ -115,7 +110,7 @@ class BatchExplainer:
             ])
             batch_results.extend(chunk_results)
 
-            logger.info(f"Processed {len(batch_results)}/{len(batches)} batches")
+            logger.info("Processed %d/%d batches", len(batch_results), len(batches))
 
         # REDUCE PHASE: Aggregate insights
         aggregated_insights = self._aggregate_insights(batch_results)
@@ -230,7 +225,7 @@ class BatchExplainer:
         This is where the magic happens: Instead of explaining each attack
         individually, we explain them as a GROUP, extracting common patterns.
         """
-        logger.info(f"Processing batch {batch.batch_id} with {len(batch.attacks)} attacks")
+        logger.info("Processing batch %s with %d attacks", batch.batch_id, len(batch.attacks))
 
         # Build batch analysis prompt
         prompt = self._build_batch_prompt(batch)
@@ -246,17 +241,17 @@ class BatchExplainer:
             # Parse batch insights
             result = self._parse_batch_response(response, batch)
 
-            logger.info(f"Batch {batch.batch_id} processed: {result.batch_insight[:80]}...")
+            logger.info("Batch %s processed: %s...", batch.batch_id, result.batch_insight[:80])
             return result
 
-        except Exception as e:
-            logger.error(f"Error processing batch {batch.batch_id}: {e}")
+        except Exception:  # pylint: disable=broad-except
+            logger.error("Error processing batch %s", batch.batch_id, exc_info=True)
 
             # Return minimal result
             return BatchExplanationResult(
                 batch_id=batch.batch_id,
                 attack_ids=[a.node_id for a in batch.attacks],
-                batch_insight=f"Error processing batch: {str(e)}",
+                batch_insight="Error processing batch - see logs",
                 confidence=0.0
             )
 
@@ -363,7 +358,7 @@ Format: Use headers and bullet points."""
 
         This synthesizes batch-level insights into system-wide understanding.
         """
-        logger.info(f"Aggregating insights from {len(batch_results)} batches")
+        logger.info("Aggregating insights from %d batches", len(batch_results))
 
         # Aggregate all patterns
         all_success_factors = []
