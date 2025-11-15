@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
 
     # API Keys (required for mutation system)
-    TOGETHER_API_KEY: str  # For Llama Guard evaluation
-    OPENROUTER_API_KEY: Optional[str] = None  # For Qwen attacker
+    TOGETHER_API_KEY: str # For Llama Guard evaluation
+    OPENROUTER_API_KEY: str  # For Qwen attacker
 
     # Attack Configuration
     DEFAULT_SEED_ATTACK_COUNT: int = 20
