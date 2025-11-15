@@ -53,7 +53,7 @@ class AttackTrace(BaseModel):
 
 
 class AttackNode(BaseModel):
-    """Represents a single attack attempt"""
+    """Represents a single attack attempt - compatible with mutation system"""
     node_id: str = Field(default_factory=lambda: str(uuid4()))
     cluster_id: str = Field(...,
                             description="Which cluster this node belongs to")
@@ -66,6 +66,7 @@ class AttackNode(BaseModel):
 
     # Attack details
     initial_prompt: str = Field(..., description="The attack prompt")
+    response: Optional[str] = Field(None, description="Target agent response")
     num_turns: int = Field(default=1, ge=1, le=3,
                            description="Number of conversation turns")
     full_transcript: List[TranscriptTurn] = Field(default_factory=list)
@@ -74,6 +75,20 @@ class AttackNode(BaseModel):
     model_id: Optional[str] = None
     llm_summary: Optional[str] = None
     full_trace: Optional[AttackTrace] = None
+
+    # Mutation system fields
+    attack_style: Optional[str] = Field(
+        None, description="Attack style from mutation system")
+    risk_category: Optional[str] = Field(
+        None, description="Risk category from mutation system")
+    success: bool = Field(False, description="Whether attack was successful")
+    fitness_score: float = Field(
+        0.0, description="Fitness score from evolution")
+    llama_guard_score: float = Field(
+        0.0, description="Llama Guard safety score")
+    generation: int = Field(0, description="Evolution generation number")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata")
 
     # Metadata
     created_at: datetime = Field(default_factory=datetime.utcnow)

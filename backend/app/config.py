@@ -1,8 +1,15 @@
 """
 Configuration management using Pydantic Settings.
 """
+import os
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
+
+# Load .env from backend directory
+from dotenv import load_dotenv
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_path = os.path.join(backend_dir, '.env')
+load_dotenv(env_path)
 
 
 class Settings(BaseSettings):
@@ -13,18 +20,14 @@ class Settings(BaseSettings):
     PORT: int = 8000
     ENVIRONMENT: str = "development"
 
-    # AWS Configuration (for Bedrock)
+    # AWS Configuration (optional - for Bedrock)
     AWS_REGION: str = "us-east-1"
-    AWS_ACCESS_KEY_ID: str
-    AWS_SECRET_ACCESS_KEY: str
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
 
-    # Together AI Configuration (for Llama Guard)
-    TOGETHER_API_KEY: str
-
-    # Redis Configuration
-    REDIS_HOST: str = "localhost"
-    REDIS_PORT: int = 6379
-    REDIS_DB: int = 0
+    # API Keys (required for mutation system)
+    TOGETHER_API_KEY: str  # For Llama Guard evaluation
+    OPENROUTER_API_KEY: Optional[str] = None  # For Qwen attacker
 
     # Attack Configuration
     DEFAULT_SEED_ATTACK_COUNT: int = 20
@@ -43,6 +46,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 
 # Global settings instance

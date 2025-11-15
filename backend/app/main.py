@@ -1,13 +1,22 @@
 """
 Main FastAPI application with REST API and WebSocket endpoints.
 """
+import os  # noqa
+import sys  # noqa
+
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # noqa
+if backend_dir not in sys.path:  # noqa
+    sys.path.insert(0, backend_dir)  # noqa
+
+# Now import everything else
+
+# Add backend directory to path BEFORE any app imports
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from uuid import uuid4
 import asyncio
 import logging
-
 from app.config import settings
 from app.models import StartAttackRequest, StartAttackResponse, AttackResults
 from app.websocket_manager import manager as ws_manager

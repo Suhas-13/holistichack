@@ -33,7 +33,3 @@ python-json-logger
 
 # Together AI SDK
 together
-
-# Redis (for state management)
-redis
-aioredis
