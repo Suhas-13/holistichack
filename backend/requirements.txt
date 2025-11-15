@@ -1,0 +1,35 @@
+# Web Framework
+fastapi
+uvicorn[standard]
+websockets
+python-multipart
+
+# AWS SDK
+boto3
+botocore
+
+# HTTP Client
+httpx
+requests
+
+# Data Validation
+pydantic
+pydantic-settings
+
+# Environment Variables
+python-dotenv
+
+# Async Support
+asyncio
+
+# JSON Processing
+orjson
+
+# UUID Generation
+uuid
+
+# Logging
+python-json-logger
+
+# Together AI SDK
+together
