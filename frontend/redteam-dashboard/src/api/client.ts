@@ -1,5 +1,6 @@
 /**
  * API client for backend communication
+ * Supports both real API and mock mode for testing
  */
 
 import type {
@@ -8,6 +9,8 @@ import type {
   AttackStatusResponse,
   ApiError,
 } from '../types';
+import { mockApiResponses } from '../utils/mockWebSocket';
+import { isMockModeFromEnv } from '../hooks/useMockMode';
 
 interface APIResponse<T> {
   success: boolean;
@@ -108,6 +111,15 @@ async function fetchAPI<T>(
 export async function startAttack(
   config: StartAttackRequest
 ): Promise<APIResponse<StartAttackResponse>> {
+  // Check for mock mode
+  if (isMockModeFromEnv()) {
+    console.log('[API] Mock mode: startAttack');
+    return {
+      ...mockApiResponses.startAttack,
+      timestamp: Date.now(),
+    } as APIResponse<StartAttackResponse>;
+  }
+
   return fetchAPI<StartAttackResponse>('/attack/start', {
     method: 'POST',
     body: JSON.stringify(config),

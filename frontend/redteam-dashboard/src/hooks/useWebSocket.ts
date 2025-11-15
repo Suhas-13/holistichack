@@ -1,10 +1,13 @@
 /**
  * WebSocket hook for real-time updates
+ * Supports both real WebSocket and mock mode for testing
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { getWebSocketURL } from '../api/client';
 import type { WebSocketMessage } from '../types';
+import { createMockWebSocket, type MockWebSocket } from '../utils/mockWebSocket';
+import { useMockMode } from './useMockMode';
 
 export interface UseWebSocketOptions {
   attackId: string | null;
@@ -40,10 +43,12 @@ export function useWebSocket({
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const wsRef = useRef<WebSocket | MockWebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const shouldConnectRef = useRef(true);
+
+  const { isEnabled: isMockMode, config: mockConfig } = useMockMode();
 
   const connect = useCallback(() => {
     if (!attackId || wsRef.current?.readyState === WebSocket.OPEN) {
@@ -54,8 +59,10 @@ export function useWebSocket({
     setError(null);
 
     try {
-      const wsUrl = getWebSocketURL(attackId);
-      const ws = new WebSocket(wsUrl);
+      const wsUrl = isMockMode ? 'mock://localhost:8000' : getWebSocketURL(attackId);
+      const ws = isMockMode
+        ? createMockWebSocket(wsUrl, mockConfig)
+        : new WebSocket(wsUrl);
 
       ws.onopen = () => {
         console.log('[WebSocket] Connected');
@@ -121,6 +128,8 @@ export function useWebSocket({
     autoReconnect,
     reconnectInterval,
     maxReconnectAttempts,
+    isMockMode,
+    mockConfig,
   ]);
 
   const disconnect = useCallback(() => {

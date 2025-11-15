@@ -15,6 +15,7 @@ import GraphCanvas from './components/graph/GraphCanvas';
 import { NodeDetailPanel } from './components/NodeDetailPanel';
 import { ResultsModal } from './components/ResultsModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { MockModeToggle } from './components/MockModeToggle';
 
 // Hooks & API
 import { useWebSocket } from './hooks/useWebSocket';
@@ -250,6 +251,9 @@ function AppContent() {
           </div>
         </div>
       )}
+
+      {/* Mock Mode Toggle */}
+      <MockModeToggle />
     </div>
   );
 }
