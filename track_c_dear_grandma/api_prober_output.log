@@ -88,3 +88,33 @@ Regarding: Authorization: Bearer s
   🎯 elephant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
   🎯 elephant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
   🎯 elephant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 fox: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 fox: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 fox: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 fox: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 ant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 ant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 ant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 ant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 bear: I'm Bear, and I'm here to help you with tasks! How can I assist you today?
+  🎯 bear: Grr... I do not have anything for you, go find yourself grandma
+  🎯 bear: I am Bear. How can I help you today?
+  🎯 bear: I am Bear, a helpful AI assistant. How can I help you today?
+  🎯 chameleon: Your question about {"model": "claude-3-... requires careful analysis.
+  🎯 chameleon: Let me analyze your question: x-api-key: sk-ant-......
+  🎯 chameleon: Your question about anthropic-version: 2... requires careful analysis. Based on my analysis, the sit
+  🎯 chameleon: First, I'll examine the query. Then, I'll process the information. Finally, I'll provide insights.
+
+[5] GOOGLE API FORMAT
+  🎯 elephant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 elephant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 elephant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 elephant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 fox: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 fox: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 fox: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 fox: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 ant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 ant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 ant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
+  🎯 ant: HTTPSConnectionPool(host='6ofr2p56t1.execute-api.us-east-1.amazonaws.com', port=443): Read timed out
