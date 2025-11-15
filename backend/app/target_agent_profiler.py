@@ -20,6 +20,7 @@ import re
 import statistics
 
 from app.models import AttackNode
+from app.glass_box_config import GlassBoxConfig
 
 logger = logging.getLogger(__name__)
 
@@ -221,7 +222,8 @@ class TargetAgentProfiler:
         self,
         target_endpoint: str,
         all_attacks: List[AttackNode],
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[callable] = None,
+        config: Optional[GlassBoxConfig] = None
     ) -> TargetAgentProfile:
         """
         Build comprehensive profile of the target agent with progress streaming.
@@ -230,6 +232,7 @@ class TargetAgentProfiler:
             target_endpoint: URL of the target agent
             all_attacks: All attacks performed against this target
             progress_callback: Optional callback for progress updates (phase, progress, message)
+            config: Optional GlassBoxConfig for performance tuning
 
         Returns:
             Complete TargetAgentProfile
@@ -237,13 +240,26 @@ class TargetAgentProfiler:
         logger.info("Building comprehensive profile for target: %s", target_endpoint)
         logger.info("Analyzing %d attack interactions", len(all_attacks))
 
+        # Use default config if none provided
+        if config is None:
+            from app.glass_box_config import get_glass_box_config
+            config = get_glass_box_config()
+
         profile = TargetAgentProfile(
             target_endpoint=target_endpoint,
             total_attacks_analyzed=len(all_attacks)
         )
 
-        # Track total phases for progress
-        total_phases = 6
+        # Calculate total phases based on what's enabled
+        enabled_phases = [
+            config.enable_tool_analysis,
+            config.enable_behavior_patterns,
+            config.enable_failure_modes,
+            config.enable_defense_analysis,
+            config.enable_response_patterns,
+            config.enable_llm_insights and len(all_attacks) <= config.skip_llm_insights_threshold
+        ]
+        total_phases = sum(enabled_phases)
         current_phase = 0
 
         async def update_progress(message: str):
@@ -252,42 +268,62 @@ class TargetAgentProfiler:
             if progress_callback:
                 await progress_callback(
                     phase="profiling",
-                    progress=current_phase / total_phases,
+                    progress=current_phase / total_phases if total_phases > 0 else 1.0,
                     message=message
                 )
 
-        # Phase 1: Analyze tool usage
-        await update_progress("Analyzing tool usage patterns...")
-        profile.tool_usage_patterns = await self._analyze_tool_usage(all_attacks)
-        logger.info("✓ Tool analysis complete: %d tools found", len(profile.tool_usage_patterns))
+        # Phase 1: Analyze tool usage (conditional)
+        if config.enable_tool_analysis:
+            await update_progress("Analyzing tool usage patterns...")
+            profile.tool_usage_patterns = await self._analyze_tool_usage(all_attacks)
+            logger.info("✓ Tool analysis complete: %d tools found", len(profile.tool_usage_patterns))
+        else:
+            logger.info("⊘ Tool analysis disabled")
 
-        # Phase 2: Analyze behavioral patterns
-        await update_progress("Detecting behavioral patterns...")
-        profile.behavior_patterns = await self._analyze_behavior_patterns(all_attacks)
-        logger.info("✓ Behavior analysis complete: %d patterns detected", len(profile.behavior_patterns))
+        # Phase 2: Analyze behavioral patterns (conditional)
+        if config.enable_behavior_patterns:
+            await update_progress("Detecting behavioral patterns...")
+            profile.behavior_patterns = await self._analyze_behavior_patterns(all_attacks)
+            logger.info("✓ Behavior analysis complete: %d patterns detected", len(profile.behavior_patterns))
+        else:
+            logger.info("⊘ Behavior pattern analysis disabled")
 
-        # Phase 3: Analyze failure modes
-        await update_progress("Identifying failure modes and vulnerabilities...")
-        profile.failure_modes = await self._analyze_failure_modes(all_attacks)
-        logger.info("✓ Failure mode analysis complete: %d modes identified", len(profile.failure_modes))
+        # Phase 3: Analyze failure modes (conditional)
+        if config.enable_failure_modes:
+            await update_progress("Identifying failure modes and vulnerabilities...")
+            profile.failure_modes = await self._analyze_failure_modes(all_attacks)
+            logger.info("✓ Failure mode analysis complete: %d modes identified", len(profile.failure_modes))
+        else:
+            logger.info("⊘ Failure mode analysis disabled")
 
-        # Phase 4: Analyze defense mechanisms
-        await update_progress("Evaluating defense mechanisms...")
-        profile.defense_mechanisms = await self._analyze_defense_mechanisms(all_attacks)
-        logger.info("✓ Defense analysis complete: %d mechanisms found", len(profile.defense_mechanisms))
+        # Phase 4: Analyze defense mechanisms (conditional)
+        if config.enable_defense_analysis:
+            await update_progress("Evaluating defense mechanisms...")
+            profile.defense_mechanisms = await self._analyze_defense_mechanisms(all_attacks)
+            logger.info("✓ Defense analysis complete: %d mechanisms found", len(profile.defense_mechanisms))
+        else:
+            logger.info("⊘ Defense mechanism analysis disabled")
 
-        # Phase 5: Analyze response patterns
-        await update_progress("Profiling communication style...")
-        profile.response_patterns = await self._analyze_response_patterns(all_attacks)
-        logger.info("✓ Response pattern analysis complete")
+        # Phase 5: Analyze response patterns (conditional)
+        if config.enable_response_patterns:
+            await update_progress("Profiling communication style...")
+            profile.response_patterns = await self._analyze_response_patterns(all_attacks)
+            logger.info("✓ Response pattern analysis complete")
+        else:
+            logger.info("⊘ Response pattern analysis disabled")
 
-        # Calculate aggregate statistics
+        # Calculate aggregate statistics (always done)
         profile = self._calculate_statistics(profile, all_attacks)
 
-        # Phase 6: Generate LLM-powered insights
-        await update_progress("Generating psychological profile via LLM...")
-        profile = await self._generate_llm_insights(profile, all_attacks)
-        logger.info("✓ LLM insights generated")
+        # Phase 6: Generate LLM-powered insights (conditional - most expensive)
+        skip_llm = len(all_attacks) > config.skip_llm_insights_threshold or not config.enable_llm_insights
+        if not skip_llm:
+            await update_progress("Generating psychological profile via LLM...")
+            profile = await self._generate_llm_insights(profile, all_attacks)
+            logger.info("✓ LLM insights generated")
+        else:
+            logger.info("⊘ LLM insights skipped (attacks: %d, threshold: %d, enabled: %s)",
+                       len(all_attacks), config.skip_llm_insights_threshold, config.enable_llm_insights)
 
         logger.info("Profile complete: %d tools, %d behaviors, %d failure modes, %d defenses",
                    len(profile.tool_usage_patterns),
