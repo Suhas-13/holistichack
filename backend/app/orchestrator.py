@@ -353,8 +353,8 @@ class AttackOrchestrator:
             logger.info("GLASS BOX ANALYSIS - Starting")
             logger.info("=" * 60)
 
-            # Get all attacks
-            all_attacks = session.nodes
+            # Get all attacks (session.nodes is a dict, get values)
+            all_attacks = list(session.nodes.values())
 
             if not all_attacks:
                 logger.warning("No attacks to analyze")

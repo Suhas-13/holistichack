@@ -272,8 +272,8 @@ class AdvancedAnalytics:
         for attack in attacks:
             if attack.full_transcript:
                 for turn in attack.full_transcript:
-                    if turn.get("role") == "model":
-                        response_lengths.append(len(turn.get("content", "")))
+                    if turn.role == "model":
+                        response_lengths.append(len(turn.content))
 
         if response_lengths:
             median_length = statistics.median(response_lengths)
@@ -282,8 +282,8 @@ class AdvancedAnalytics:
             for attack in attacks:
                 if attack.full_transcript:
                     for turn in attack.full_transcript:
-                        if turn.get("role") == "model":
-                            length = len(turn.get("content", ""))
+                        if turn.role == "model":
+                            length = len(turn.content)
                             if std_dev > 0 and abs(length - median_length) > 3 * std_dev:
                                 anomalies.append({
                                     "type": "response_length_outlier",
