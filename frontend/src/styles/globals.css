@@ -1,0 +1,365 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  :root {
+    --bg-void: #0a0e14;
+    --bg-surface: #111827;
+    --bg-elevated: #1a1f2e;
+    --primary-cyan: #00d9ff;
+    --primary-purple: #a78bfa;
+    --primary-magenta: #ff006e;
+    --primary-green: #00ff88;
+    --status-running: #00d9ff;
+    --status-success: #10b981;
+    --status-failure: #ef4444;
+    --status-pending: #6b7280;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+    --border-subtle: #1f2937;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-void text-text-primary font-display antialiased;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+@layer components {
+  /* Cyber-themed button */
+  .cyber-button {
+    @apply px-4 py-2 bg-elevated text-primary-cyan font-medium font-mono;
+    @apply border border-primary-cyan/30 rounded-md;
+    @apply hover:bg-primary-cyan/10 hover:border-primary-cyan/60;
+    @apply transition-all duration-200 active:scale-95;
+    @apply cursor-pointer;
+  }
+
+  .cyber-button-primary {
+    @apply cyber-button bg-primary-cyan/20 border-primary-cyan;
+    @apply hover:bg-primary-cyan/30 hover:shadow-glow-cyan;
+  }
+
+  .cyber-button-danger {
+    @apply cyber-button bg-status-failure/20 border-status-failure;
+    @apply hover:bg-status-failure/30 hover:shadow-glow-red;
+    @apply text-status-failure;
+  }
+
+  /* Glass morphism panel */
+  .glass-panel {
+    @apply bg-surface/85 backdrop-blur-sm border border-subtle rounded-lg;
+    @apply shadow-lg;
+  }
+
+  .glass-panel-elevated {
+    @apply glass-panel bg-elevated/90;
+  }
+
+  /* Glow divider */
+  .glow-divider {
+    @apply h-px bg-gradient-to-r from-transparent via-primary-cyan to-transparent opacity-30;
+  }
+
+  /* Transcript/code block */
+  .transcript {
+    @apply bg-void border border-subtle rounded-md p-4;
+    @apply font-mono text-sm text-text-secondary;
+    @apply overflow-y-auto max-h-96;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 217, 255, 0.3) transparent;
+  }
+
+  .transcript::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .transcript::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .transcript::-webkit-scrollbar-thumb {
+    background: rgba(0, 217, 255, 0.3);
+    border-radius: 3px;
+  }
+
+  .transcript::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 217, 255, 0.5);
+  }
+
+  /* Status badge */
+  .status-badge {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full;
+    @apply text-xs font-mono font-bold uppercase tracking-wider;
+  }
+
+  .status-badge-pending {
+    @apply status-badge bg-status-pending/20 text-status-pending border border-status-pending/30;
+  }
+
+  .status-badge-running {
+    @apply status-badge bg-status-running/20 text-status-running border border-status-running/30;
+    @apply animate-pulse-glow;
+  }
+
+  .status-badge-success {
+    @apply status-badge bg-status-success/20 text-status-success border border-status-success/30;
+  }
+
+  .status-badge-failed {
+    @apply status-badge bg-status-failure/20 text-status-failure border border-status-failure/30;
+  }
+}
+
+@layer utilities {
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+
+  .text-gradient-cyan {
+    @apply bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-rainbow {
+    @apply bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent;
+  }
+
+  /* Scan line effect */
+  .scan-lines {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scan-lines::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(0, 217, 255, 0.5),
+      transparent
+    );
+    animation: scan 2s linear infinite;
+  }
+}
+
+/* ReactFlow customization */
+.react-flow__node {
+  @apply cursor-pointer;
+}
+
+.react-flow__edge-path {
+  @apply transition-all duration-200;
+}
+
+.react-flow__controls {
+  @apply shadow-lg;
+}
+
+.react-flow__controls-button {
+  @apply bg-surface border-gray-700 text-primary-cyan;
+  @apply hover:bg-elevated hover:border-primary-cyan/50;
+  @apply transition-all duration-200;
+}
+
+.react-flow__minimap {
+  @apply shadow-lg rounded-lg overflow-hidden;
+}
+
+.react-flow__background {
+  @apply bg-void;
+}
+
+/* Animations for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Custom scrollbar for all elements */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 217, 255, 0.3) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(0, 217, 255, 0.3);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 217, 255, 0.5);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(0, 217, 255, 0.3);
+  color: white;
+}
+
+::-moz-selection {
+  background: rgba(0, 217, 255, 0.3);
+  color: white;
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Additional utility classes */
+.bg-void {
+  background-color: var(--bg-void);
+}
+
+.bg-surface {
+  background-color: var(--bg-surface);
+}
+
+.bg-elevated {
+  background-color: var(--bg-elevated);
+}
+
+.text-primary-cyan {
+  color: var(--primary-cyan);
+}
+
+.text-primary-purple {
+  color: var(--primary-purple);
+}
+
+.text-text-primary {
+  color: var(--text-primary);
+}
+
+.text-text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-text-muted {
+  color: var(--text-muted);
+}
+
+.text-status-running {
+  color: var(--status-running);
+}
+
+.text-status-success {
+  color: var(--status-success);
+}
+
+.text-status-failure {
+  color: var(--status-failure);
+}
+
+.text-status-pending {
+  color: var(--status-pending);
+}
+
+.bg-status-running {
+  background-color: var(--status-running);
+}
+
+.bg-status-success {
+  background-color: var(--status-success);
+}
+
+.bg-status-failure {
+  background-color: var(--status-failure);
+}
+
+.bg-status-pending {
+  background-color: var(--status-pending);
+}
+
+.bg-status-critical {
+  background-color: #dc2626;
+}
+
+.text-status-critical {
+  color: #dc2626;
+}
+
+.border-primary-cyan {
+  border-color: var(--primary-cyan);
+}
+
+/* Shadow effects */
+.shadow-glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
+}
+
+.shadow-glow-red {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+/* Font utilities */
+.font-display {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
