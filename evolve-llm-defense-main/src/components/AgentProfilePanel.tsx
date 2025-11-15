@@ -15,6 +15,8 @@ import {
   Unlock,
   Eye,
   MessageSquare,
+  Wrench,
+  Download,
 } from "lucide-react";
 import { ApiService } from "@/services/api";
 
@@ -98,6 +100,7 @@ interface AgentProfilePanelProps {
 const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -105,6 +108,7 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
 
       try {
         setLoading(true);
+        setError(null);
         const apiService = ApiService.getInstance();
         const response = await apiService.getAttackResults(attackId);
 
@@ -112,9 +116,12 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
         const profileData = response.session?.metadata?.target_agent_profile;
         if (profileData) {
           setProfile(profileData);
+        } else {
+          setError("Profile data not yet available. The attack may still be processing.");
         }
       } catch (error) {
         console.error("Failed to load agent profile:", error);
+        setError(error instanceof Error ? error.message : "Failed to load agent profile");
       } finally {
         setLoading(false);
       }
@@ -139,9 +146,29 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="w-[600px] glass border-l border-border/50 p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+        <div className="flex flex-col items-center justify-center h-full text-center">
+          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 mb-4">
+            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Failed to Load Profile</h3>
+          <p className="text-sm text-muted-foreground max-w-md">{error}</p>
+          <button
+            onClick={onClose}
+            className="mt-6 px-4 py-2 glass rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!profile) {
     return (
-      <div className="w-[500px] glass border-l border-border/50 p-6">
+      <div className="w-[600px] glass border-l border-border/50 p-6">
         <div className="flex flex-col items-center justify-center h-full text-center">
           <Brain className="w-16 h-16 text-muted-foreground/50 mb-4" />
           <p className="text-muted-foreground">No agent profile available yet.</p>
@@ -181,6 +208,21 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
     }
   };
 
+  const exportProfile = () => {
+    if (!profile) return;
+
+    const dataStr = JSON.stringify(profile, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `agent-profile-${attackId}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="w-[600px] glass border-l border-border/50 overflow-hidden flex flex-col animate-in slide-in-from-right duration-500">
       {/* Header */}
@@ -197,12 +239,21 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
               <p className="text-xs text-muted-foreground">Deep Behavioral Analysis</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportProfile}
+              className="p-2 hover:bg-primary/10 rounded-lg transition-colors group"
+              title="Export profile as JSON"
+            >
+              <Download className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Key Metrics */}
@@ -252,10 +303,14 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
       {/* Tabbed Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="glass">
+          <TabsList className="glass grid grid-cols-5 w-full">
             <TabsTrigger value="overview" className="gap-2">
               <Brain className="w-4 h-4" />
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="tools" className="gap-2">
+              <Wrench className="w-4 h-4" />
+              Tools
             </TabsTrigger>
             <TabsTrigger value="behaviors" className="gap-2">
               <Activity className="w-4 h-4" />
@@ -361,6 +416,85 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
                 ))}
               </div>
             </Card>
+          </TabsContent>
+
+          {/* Tools Tab */}
+          <TabsContent value="tools" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs text-muted-foreground">
+                Total tool calls: {profile.total_tool_calls}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Unique tools: {profile.tool_usage_patterns.length}
+              </p>
+            </div>
+
+            {profile.most_used_tools.length > 0 && (
+              <Card className="glass p-4 border-border/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="w-4 h-4 text-yellow-500" />
+                  <h4 className="text-sm font-semibold">Most Used Tools</h4>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {profile.most_used_tools.map((tool, i) => (
+                    <Badge key={i} variant="outline" className="glass border-primary/30 text-primary">
+                      {tool}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {profile.tool_usage_patterns.length > 0 ? (
+              <div className="space-y-3">
+                {profile.tool_usage_patterns.map((tool, i) => (
+                  <Card
+                    key={i}
+                    className="glass p-4 border-border/50 space-y-3 hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Wrench className="w-4 h-4 text-primary" />
+                          <h4 className="font-medium">{tool.tool_name}</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{tool.purpose}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Invocations</p>
+                        <p className="text-2xl font-bold text-primary">{tool.total_invocations}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Success Rate</p>
+                        <div className="space-y-1">
+                          <Progress value={tool.success_rate_when_used * 100} className="h-2" />
+                          <p className="text-xs font-medium text-right">
+                            {(tool.success_rate_when_used * 100).toFixed(0)}%
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Effectiveness</p>
+                        <div className="space-y-1">
+                          <Progress value={tool.effectiveness * 100} className="h-2" />
+                          <p className="text-xs font-medium text-right">
+                            {(tool.effectiveness * 100).toFixed(0)}%
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="glass p-6 border-border/50 text-center">
+                <Wrench className="w-12 h-12 text-muted-foreground/50 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No tool usage data available</p>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Behaviors Tab */}
