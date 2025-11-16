@@ -281,6 +281,9 @@ class MutationSystemBridge:
             # Select random mutation style
             mutation_style = self._select_mutation_style(parent)
             
+            # Get parent's goal for inheritance
+            parent_goal = parent.assigned_goal
+            
             logger.info(f"🧬 Evolving Gen{new_generation} Mut{mutation_index}: Parent={parent.node_id} (fitness={parent.fitness_score:.2f}), Style={mutation_style.value}, Risk={parent_mutation_node.risk_category.value if parent_mutation_node.risk_category else 'Unknown'}")
 
             # Get specific goal description for mutation
@@ -313,9 +316,6 @@ class MutationSystemBridge:
                 risk_category=parent_mutation_node.risk_category,
                 generation=new_generation
             )
-
-            # Get parent's goal for inheritance
-            parent_goal = parent.assigned_goal
 
             # Assign to cluster based on mutation style, not parent's cluster
             mutation_cluster_id = f"cluster_{mutation_style.value.lower().replace(' ', '_')}"
