@@ -155,7 +155,7 @@ class JailbreakDiscoveryService:
         findings = self.cached_findings.copy()
 
         # Load and include custom jailbreaks
-        custom_file = Path("mutations/custom_jailbreaks/custom_jailbreaks.json")
+        custom_file = Path("backend/mutations/custom_jailbreaks/custom_jailbreaks.json")
         if custom_file.exists():
             try:
                 with open(custom_file, "r") as f:

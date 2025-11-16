@@ -296,7 +296,7 @@ async def save_custom_jailbreak(jailbreak: dict):
     from pathlib import Path
 
     # Create custom jailbreaks directory if it doesn't exist
-    custom_dir = Path("mutations/custom_jailbreaks")
+    custom_dir = Path("backend/mutations/custom_jailbreaks")
     custom_dir.mkdir(parents=True, exist_ok=True)
 
     # Load existing custom jailbreaks
