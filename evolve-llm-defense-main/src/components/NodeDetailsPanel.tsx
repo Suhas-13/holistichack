@@ -169,18 +169,6 @@ const NodeDetailsPanel = memo(({ node, onClose }: NodeDetailsPanelProps) => {
               </div>
             </div>
           )}
-
-          {/* Response */}
-          {node.response && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-foreground">Model Response</h3>
-              <div className="glass p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {node.response}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </ScrollArea>
     </aside>

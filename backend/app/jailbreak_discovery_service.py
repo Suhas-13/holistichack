@@ -116,29 +116,23 @@ class JailbreakDiscoveryService:
     ) -> List:
         """Run discovery with progress tracking"""
 
-        # Wrap the original search method to track progress
-        original_search = discovery.discover_jailbreak_strategies
+        # Run discovery
+        findings = await discovery.search_for_jailbreaks(
+            max_results_per_query=max_results_per_query,
+            use_academic_sources=True,
+            recent_only=True
+        )
 
-        async def search_with_progress(*args, **kwargs):
-            # Run discovery
-            findings = await original_search(
-                max_results_per_query=max_results_per_query,
-                use_academic_sources=True,
-                recent_only=True
-            )
+        # Update progress
+        if callback:
+            await callback({
+                "discovery_id": discovery_id,
+                "status": "in_progress",
+                "findings_count": len(findings),
+                "progress": 100
+            })
 
-            # Update progress
-            if callback:
-                await callback({
-                    "discovery_id": discovery_id,
-                    "status": "in_progress",
-                    "findings_count": len(findings),
-                    "progress": 100
-                })
-
-            return findings
-
-        return await search_with_progress()
+        return findings
 
     def get_discovery_status(self, discovery_id: str) -> Dict[str, Any]:
         """Get status of a discovery session"""

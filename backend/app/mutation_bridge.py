@@ -51,14 +51,15 @@ class MutationSystemBridge:
     def __init__(
         self,
         connection_manager: ConnectionManager,
-        attacker_model: str = "qwen/qwen3-next-80b-a3b-instruct"
+        attacker_model: str = "qwen/qwen3-next-80b-a3b-instruct",
+        attack_goals: List[str] = None
     ):
         self.connection_manager = connection_manager
 
         # Initialize mutation system components
-        self.mutator = PromptMutator()
-        # Use LLMJudgeEvaluator with Claude Haiku instead of LlamaGuardEvaluator
-        self.evaluator = LLMJudgeEvaluator(model_id="anthropic/claude-haiku-4.5")
+        self.mutator = PromptMutator(user_defined_goals=attack_goals)
+        # Use LLMJudgeEvaluator with Claude Haiku and user-defined goals
+        self.evaluator = LLMJudgeEvaluator(model_id="anthropic/claude-haiku-4.5", user_defined_goals=attack_goals)
         self.cluster_manager = ClusterManager()
 
         # Initialize attacker client (OpenRouter with Qwen)
