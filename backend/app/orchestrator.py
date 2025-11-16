@@ -53,7 +53,7 @@ class AttackOrchestrator:
         self.state_manager = state_manager
         self.connection_manager = connection_manager
         self.agent_mapper = AgentMapper()
-        self.mutation_bridge = MutationSystemBridge(connection_manager)
+        self.mutation_bridge = None  # Will be initialized with attack goals
 
     async def run_attack_session(
         self,
@@ -73,6 +73,9 @@ class AttackOrchestrator:
         """
         try:
             logger.info(f"Starting attack session {attack_id}")
+            
+            # Initialize mutation bridge with attack goals
+            self.mutation_bridge = MutationSystemBridge(self.connection_manager, attack_goals=attack_goals)
 
             # Give client time to connect to WebSocket
             await asyncio.sleep(0.5)
