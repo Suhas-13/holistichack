@@ -102,7 +102,8 @@ async def start_attack(request: StartAttackRequest):
             attack_id=attack_id,
             target_endpoint=request.target_endpoint,
             attack_goals=request.attack_goals,
-            seed_attack_count=request.seed_attack_count
+            seed_attack_count=request.seed_attack_count,
+            max_evolution_steps=request.max_evolution_steps
         )
     )
 

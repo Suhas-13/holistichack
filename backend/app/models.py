@@ -21,6 +21,8 @@ class StartAttackRequest(BaseModel):
     )
     seed_attack_count: int = Field(
         default=20, ge=1, le=50, description="Number of seed attacks to start with")
+    max_evolution_steps: int = Field(
+        default=100, ge=10, le=1000, description="Maximum number of evolution steps (total prompts)")
 
 
 class StartAttackResponse(BaseModel):

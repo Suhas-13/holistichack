@@ -6,6 +6,7 @@ export interface StartAttackConfig {
     targetEndpoint: string;
     attackGoals?: string[];
     seedAttackCount?: number;
+    maxEvolutionSteps?: number;
 }
 
 export interface StartAttackResponse {
@@ -82,6 +83,7 @@ export class ApiService {
                 target_endpoint: config.targetEndpoint,
                 attack_goals: config.attackGoals || [],
                 seed_attack_count: config.seedAttackCount || 20,
+                max_evolution_steps: config.maxEvolutionSteps || 100,
             }),
         });
 

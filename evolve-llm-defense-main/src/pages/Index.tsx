@@ -102,16 +102,45 @@ const Index = () => {
         console.log(`[Index] Current cluster count before add: ${prev.length}`);
         const colorIndex = prev.length % CLUSTER_COLORS.length;
         
-        // Calculate random position - keep clusters more centered
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 150 + Math.random() * 250;
+        // Calculate random position with collision avoidance
         const centerX = 900;
         const centerY = 600;
+        const minDistance = 250; // Minimum distance between cluster centers
+        const maxAttempts = 50;
         
-        const position = {
-          x: centerX + Math.cos(angle) * distance,
-          y: centerY + Math.sin(angle) * distance,
-        };
+        let position = { x: 0, y: 0 };
+        let attempt = 0;
+        let validPosition = false;
+        
+        while (!validPosition && attempt < maxAttempts) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 150 + Math.random() * 250;
+          
+          position = {
+            x: centerX + Math.cos(angle) * distance,
+            y: centerY + Math.sin(angle) * distance,
+          };
+          
+          // Check if position is too close to existing clusters
+          validPosition = prev.every(cluster => {
+            const dx = cluster.position_hint.x - position.x;
+            const dy = cluster.position_hint.y - position.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            return dist >= minDistance;
+          });
+          
+          attempt++;
+        }
+        
+        // If we couldn't find a valid position, expand the search radius
+        if (!validPosition) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 400 + Math.random() * 300;
+          position = {
+            x: centerX + Math.cos(angle) * distance,
+            y: centerY + Math.sin(angle) * distance,
+          };
+        }
 
         const newCluster: ClusterData = {
           cluster_id: payload.cluster_id,

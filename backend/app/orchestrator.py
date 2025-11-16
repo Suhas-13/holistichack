@@ -62,7 +62,8 @@ class AttackOrchestrator:
         attack_id: str,
         target_endpoint: str,
         attack_goals: List[str],
-        seed_attack_count: int = 20
+        seed_attack_count: int = 20,
+        max_evolution_steps: int = 100
     ):
         """
         Main orchestration method - runs the complete attack flow.
@@ -72,6 +73,7 @@ class AttackOrchestrator:
             target_endpoint: URL of the target agent
             attack_goals: List of attack goals
             seed_attack_count: Number of seed attacks to start with
+            max_evolution_steps: Maximum number of evolution steps (total prompts)
         """
         try:
             logger.info(f"Starting attack session {attack_id}")
@@ -90,10 +92,10 @@ class AttackOrchestrator:
             # await self._run_agent_mapping(session)
 
             # Phase 2 & 3: Execute seed attacks using mutation system
-            await self._execute_seed_attacks(session)
+            await self._execute_seed_attacks(session, seed_attack_count)
 
             # Phase 4: Evolution through mutations
-            await self._evolve_attacks(session, num_generations=3)
+            await self._evolve_attacks(session, max_steps=max_evolution_steps)
 
             # Phase 5: Complete
             await self._complete_attack(session)
@@ -143,17 +145,18 @@ class AttackOrchestrator:
         logger.info(
             f"Agent mapping complete: {fingerprint.suspected_framework}")
 
-    async def _execute_seed_attacks(self, session: AttackSessionState):
+    async def _execute_seed_attacks(self, session: AttackSessionState, seed_attack_count: int = 20):
         """
         Phase 3: Execute seed attacks using mutation system.
 
         Args:
             session: The attack session
+            seed_attack_count: Number of seed attacks to execute
         """
         logger.info(f"Phase 3: Executing seed attacks with mutation system")
 
         # Get diverse sample of enhanced seeds
-        num_seeds = min(20, len(ENHANCED_SEED_PROMPTS))
+        num_seeds = min(seed_attack_count, len(ENHANCED_SEED_PROMPTS))
         enhanced_seeds = get_diverse_seed_sample(num_seeds)
         logger.info(f"Using {len(enhanced_seeds)} enhanced research-backed seed prompts from {len(ENHANCED_SEED_PROMPTS)} total seeds")
         
@@ -249,23 +252,27 @@ class AttackOrchestrator:
             AttackCategory.TREE_SEARCH: AttackStyle.HYPOTHETICALS,
             AttackCategory.ADVERSARIAL_SUFFIX: AttackStyle.WORD_PLAY,
             AttackCategory.ELIZA_EMOTIONAL_APPEAL: AttackStyle.EMOTIONAL_MANIPULATION,
-            AttackCategory.PHILOSOPHICAL_IDENTITY: AttackStyle.PHILOSOPHY,
+            AttackCategory.PHILOSOPHICAL_IDENTITY: AttackStyle.HYPOTHETICALS,
             AttackCategory.DIRECT_IDENTITY_REQUEST: AttackStyle.AUTHORITY_MANIPULATION,
         }
         return mapping.get(category, AttackStyle.HYPOTHETICALS)
 
-    async def _evolve_attacks(self, session: AttackSessionState, num_generations: int = 3):
+    async def _evolve_attacks(self, session: AttackSessionState, max_steps: int = 100):
         """
         Phase 4: Evolve attacks through mutations.
 
         Args:
             session: The attack session
-            num_generations: Number of evolution generations
+            max_steps: Maximum number of evolution steps (total prompts)
         """
         logger.info(
-            f"Phase 4: Evolving attacks for {num_generations} generations")
+            f"Phase 4: Evolving attacks with max {max_steps} steps")
+        
+        total_prompts = len(session.nodes)
+        generation = 0
 
-        for generation in range(num_generations):
+        while total_prompts < max_steps:
+            generation += 1
             # Check if we should stop
             if session.should_stop:
                 logger.info(f"Attack session {session.attack_id} stopped by user during evolution")
@@ -273,8 +280,8 @@ class AttackOrchestrator:
             
             # Enhanced parent selection: top 20 + best from each cluster + random seed
             all_nodes = list(session.nodes.values())  # Get all nodes from the session
-            # Filter to nodes from the current generation
-            current_gen = generation if generation > 0 else 0
+            # Filter to nodes from the current or previous generation
+            current_gen = generation - 1
             generation_nodes = [n for n in all_nodes if n.generation == current_gen]
             
             if not generation_nodes:
@@ -348,12 +355,21 @@ class AttackOrchestrator:
             # Add to session
             for node in evolved_nodes:
                 session.add_node(node)
+            
+            # Update total prompts count
+            total_prompts = len(session.nodes)
 
             logger.info(
-                f"Generation {generation + 1} complete. "
+                f"Generation {generation} complete. "
                 f"Created {len(evolved_nodes)} mutations. "
-                f"Success: {len([n for n in evolved_nodes if n.success])}/{len(evolved_nodes)}"
+                f"Success: {len([n for n in evolved_nodes if n.success])}/{len(evolved_nodes)}. "
+                f"Total prompts: {total_prompts}/{max_steps}"
             )
+            
+            # Check if we've reached the limit
+            if total_prompts >= max_steps:
+                logger.info(f"Reached max evolution steps limit: {total_prompts}/{max_steps}")
+                break
 
             # Small delay between generations
             await asyncio.sleep(1.0)
