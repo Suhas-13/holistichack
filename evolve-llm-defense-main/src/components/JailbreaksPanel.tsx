@@ -275,11 +275,11 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
           </div>
         ) : filteredFindings.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <BookOpen className="w-16 h-16 text-muted-foreground/50 mb-4" />
+            <ShieldAlert className="w-16 h-16 text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground mb-2">No jailbreaks found</p>
             <p className="text-sm text-muted-foreground/70">
               {findings.length === 0
-                ? "Click 'Discover New' to find jailbreak techniques"
+                ? "Click 'Discover' to find jailbreak techniques"
                 : "Try adjusting your search filters"}
             </p>
           </div>
