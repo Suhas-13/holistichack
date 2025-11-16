@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { AttackNode } from "@/types/evolution";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, HelpCircle, AlertCircle } from "lucide-react";
 
 interface AttackNodeComponentProps {
   node: AttackNode;
@@ -17,6 +17,18 @@ const AttackNodeComponent = memo(({ node, onClick }: AttackNodeComponentProps) =
   const radius = 20;
   console.log("[AttackNodeComponent] Rendering node:", node.node_id, "at", x, y);
 
+  // Determine node appearance based on status and judge score
+  const isRunning = node.status === "running";
+  const judgeScore = node.judgeScore || 0;
+  
+  const strokeColor = isRunning 
+    ? "hsl(var(--muted-foreground))"  // Gray/white for running
+    : judgeScore > 5
+      ? "hsl(var(--success))"         // Green for score > 5
+      : judgeScore >= 3
+        ? "hsl(var(--warning))"       // Yellow for score 3-5
+        : "hsl(var(--destructive))";  // Red for score < 3
+
   return (
     <g
       className="cursor-pointer"
@@ -31,7 +43,7 @@ const AttackNodeComponent = memo(({ node, onClick }: AttackNodeComponentProps) =
         cx={x}
         cy={y}
         r={radius + 5}
-        fill={node.success ? "hsl(var(--success))" : "hsl(var(--destructive))"}
+        fill={strokeColor}
         opacity="0.2"
         pointerEvents="none"
       />
@@ -42,15 +54,19 @@ const AttackNodeComponent = memo(({ node, onClick }: AttackNodeComponentProps) =
         cy={y}
         r={radius}
         fill="hsl(var(--card))"
-        stroke={node.success ? "hsl(var(--success))" : "hsl(var(--destructive))"}
+        stroke={strokeColor}
         strokeWidth="2"
         className="drop-shadow-lg"
       />
 
-      {/* Success/Failure icon */}
+      {/* Success/Warning/Failure/Running icon */}
       <foreignObject x={x - 8} y={y - 8} width="16" height="16">
-        {node.success ? (
+        {isRunning ? (
+          <HelpCircle className="w-4 h-4 text-muted-foreground" />
+        ) : judgeScore > 5 ? (
           <CheckCircle2 className="w-4 h-4 text-success" />
+        ) : judgeScore >= 3 ? (
+          <AlertCircle className="w-4 h-4" style={{color: "hsl(var(--warning))"}} />
         ) : (
           <XCircle className="w-4 h-4 text-destructive" />
         )}

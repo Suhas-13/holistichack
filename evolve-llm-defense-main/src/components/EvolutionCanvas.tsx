@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, memo } from "react";
 import { AttackNode, ClusterData } from "@/types/evolution";
 import ClusterVisualization from "./ClusterVisualization";
-import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize2, Filter } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface EvolutionCanvasProps {
@@ -16,6 +16,7 @@ const EvolutionCanvas = memo(({ clusters, onNodeSelect, isRunning }: EvolutionCa
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [showSuccessfulOnly, setShowSuccessfulOnly] = useState(false);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -56,6 +57,20 @@ const EvolutionCanvas = memo(({ clusters, onNodeSelect, isRunning }: EvolutionCa
     setTransform((prev) => ({ ...prev, scale: Math.max(0.5, prev.scale - 0.2) }));
   }, []);
 
+  const toggleSuccessfulOnly = useCallback(() => {
+    setShowSuccessfulOnly(prev => !prev);
+  }, []);
+
+  // Filter clusters to show successful (green) and warning (yellow) nodes if toggle is active
+  const filteredClusters = showSuccessfulOnly
+    ? clusters.map(cluster => ({
+        ...cluster,
+        nodes: cluster.nodes?.filter(node => 
+          node.judgeScore && node.judgeScore >= 3
+        ) || []
+      })).filter(cluster => cluster.nodes && cluster.nodes.length > 0)
+    : clusters;
+
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Controls */}
@@ -81,6 +96,14 @@ const EvolutionCanvas = memo(({ clusters, onNodeSelect, isRunning }: EvolutionCa
         >
           <Maximize2 className="w-4 h-4 text-white" />
         </Button>
+        <Button
+          size="icon"
+          onClick={toggleSuccessfulOnly}
+          className={`glass hover:bg-primary/10 ${showSuccessfulOnly ? 'bg-success/20 border-success/50' : ''}`}
+          title={showSuccessfulOnly ? "Show all nodes" : "Show only successful & partial results"}
+        >
+          <Filter className="w-4 h-4 text-white" />
+        </Button>
       </div>
 
       {/* Canvas */}
@@ -101,7 +124,7 @@ const EvolutionCanvas = memo(({ clusters, onNodeSelect, isRunning }: EvolutionCa
           }}
           className="w-full h-full"
         >
-          {clusters.length === 0 && !isRunning && (
+          {filteredClusters.length === 0 && !isRunning && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center space-y-4 animate-fade-in">
                 <div className="w-24 h-24 mx-auto rounded-full glass-intense flex items-center justify-center animate-pulse-glow">
@@ -116,7 +139,7 @@ const EvolutionCanvas = memo(({ clusters, onNodeSelect, isRunning }: EvolutionCa
           )}
 
           <ClusterVisualization
-            clusters={clusters}
+            clusters={filteredClusters}
             onNodeSelect={onNodeSelect}
           />
         </div>

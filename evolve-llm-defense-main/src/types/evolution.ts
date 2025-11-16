@@ -36,6 +36,7 @@ export interface AttackNode {
   cost_usd: number;
   latency_ms: number;
   position?: { x: number; y: number };
+  judgeScore?: number; // Raw LLM judge score (1-10)
 }
 
 export interface ClusterData {

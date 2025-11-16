@@ -271,29 +271,74 @@ class AttackOrchestrator:
                 logger.info(f"Attack session {session.attack_id} stopped by user during evolution")
                 return
             
-            # Get successful nodes from previous generation
-            successful_nodes = session.get_successful_nodes()
-
-            if not successful_nodes:
-                logger.warning(
-                    f"No successful attacks found. Using all nodes from previous generation.")
-                # Use all nodes if none succeeded, prioritizing higher fitness scores
-                all_nodes = list(session.nodes.values())  # Get all nodes from the session
-                # Filter to nodes from the current generation
-                current_gen = generation if generation > 0 else 0
-                generation_nodes = [n for n in all_nodes if n.generation == current_gen]
+            # Enhanced parent selection: top 20 + best from each cluster + random seed
+            all_nodes = list(session.nodes.values())  # Get all nodes from the session
+            # Filter to nodes from the current generation
+            current_gen = generation if generation > 0 else 0
+            generation_nodes = [n for n in all_nodes if n.generation == current_gen]
+            
+            if not generation_nodes:
+                logger.error("No nodes available from current generation to evolve")
+                break
+            
+            # Start with top 20 nodes by fitness score
+            generation_nodes.sort(key=lambda n: n.fitness_score, reverse=True)
+            selected_nodes = generation_nodes[:20].copy()  # Top 20 nodes by fitness
+            selected_node_ids = {n.node_id for n in selected_nodes}
+            
+            # Add best node from each cluster (avoiding duplicates)
+            cluster_nodes = {}
+            for node in all_nodes:
+                if node.cluster_id not in cluster_nodes:
+                    cluster_nodes[node.cluster_id] = []
+                cluster_nodes[node.cluster_id].append(node)
+            
+            for cluster_id, nodes in cluster_nodes.items():
+                # Check if this cluster exists in session, if not create and broadcast it
+                if cluster_id not in session.clusters:
+                    # Create missing cluster based on the best node's attack style
+                    best_node = max(nodes, key=lambda n: n.fitness_score)
+                    cluster_name = best_node.attack_style or "Unknown Style"
+                    
+                    cluster = Cluster(
+                        cluster_id=cluster_id,
+                        name=cluster_name,
+                        description=f"Attacks using {cluster_name} style"
+                    )
+                    session.add_cluster(cluster)
+                    
+                    # Broadcast the missing cluster
+                    await self.connection_manager.broadcast_cluster_add(
+                        attack_id=session.attack_id,
+                        cluster_id=cluster.cluster_id,
+                        name=cluster.name
+                    )
+                    logger.info(f"Created and broadcast missing cluster: {cluster_name}")
                 
-                if not generation_nodes:
-                    logger.error("No nodes available from current generation to evolve")
-                    break
-                
-                # Sort by fitness score and take top nodes
-                generation_nodes.sort(key=lambda n: n.fitness_score, reverse=True)
-                successful_nodes = generation_nodes[:20]  # Take top 20 nodes even if they failed
-                logger.info(f"Using {len(successful_nodes)} nodes with fitness scores {[n.fitness_score for n in successful_nodes[:5]]}...")
+                best_in_cluster = max(nodes, key=lambda n: n.fitness_score)
+                if best_in_cluster.node_id not in selected_node_ids:
+                    selected_nodes.append(best_in_cluster)
+                    selected_node_ids.add(best_in_cluster.node_id)
+            
+            # Add a random seed node (generation 0) for diversity
+            seed_nodes = [n for n in all_nodes if n.generation == 0]
+            if seed_nodes:
+                import random
+                random_seed = random.choice(seed_nodes)
+                if random_seed.node_id not in selected_node_ids:
+                    selected_nodes.append(random_seed)
+                    selected_node_ids.add(random_seed.node_id)
+            
+            successful_nodes = selected_nodes
+            
+            # Log selection info
+            num_successful = len([n for n in successful_nodes if n.success])
+            num_from_clusters = len(selected_nodes) - 20 - (1 if seed_nodes and len(selected_nodes) > 20 else 0)
+            logger.info(f"Selected {len(successful_nodes)} parent nodes: 20 top performers + {num_from_clusters} cluster leaders + {'1 random seed' if seed_nodes and len(selected_nodes) > 20 else '0 seeds'}")
+            logger.info(f"Success breakdown: {num_successful} successful nodes, fitness scores {[n.fitness_score for n in successful_nodes[:5]]}...")
 
             # Generate mutations
-            mutations_per_generation = 10
+            mutations_per_generation = 20
             evolved_nodes = await self.mutation_bridge.evolve_attacks(
                 session,
                 successful_nodes,

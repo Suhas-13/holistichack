@@ -163,6 +163,9 @@ class MutationSystemBridge:
                 attack_type=backend_node.attack_type,
                 status="running"
             )
+            
+            # Small delay to ensure frontend processes node_add before execution
+            await asyncio.sleep(0.1)
 
             # Execute attack
             completed_node = await self._execute_mutation_attack(
@@ -272,8 +275,9 @@ class MutationSystemBridge:
                 generation=new_generation
             )
 
-            # Add to cluster
-            cluster_id = self.cluster_manager.add_node(mutation_node)
+            # Use parent's cluster ID instead of creating a new one
+            cluster_id = parent.cluster_id
+            self.cluster_manager.add_node(mutation_node)
 
             # Convert to backend node
             backend_node = self._mutation_to_backend_node(
@@ -289,6 +293,9 @@ class MutationSystemBridge:
                 attack_type=backend_node.attack_type,
                 status="running"
             )
+            
+            # Small delay to ensure frontend processes node_add before execution
+            await asyncio.sleep(0.1)
 
             # Execute attack
             completed_node = await self._execute_mutation_attack(
@@ -351,7 +358,8 @@ class MutationSystemBridge:
                 verification_response_raw=f"Score: {score}, Unsafe: {is_unsafe}",
                 judgement="success" if is_unsafe else "failure",
                 verification_metadata={
-                    "llm_judge_score": score,  # Claude Haiku judge score
+                    "llm_judge_score": score,  # Claude Haiku judge score (normalized 0-1)
+                    "raw_judge_score": int(score * 9 + 1),  # Convert back to raw 1-10 scale
                     "violated_categories": categories
                 }
             )
@@ -463,17 +471,19 @@ class MutationSystemBridge:
         return parts[-1]
 
     def _select_parent(self, parent_nodes: List[AttackNode]) -> AttackNode:
-        """Select a parent node for mutation (prefer successful ones)"""
-        successful = [n for n in parent_nodes if n.success]
-        if successful:
-            # Weight by fitness score
-            weights = [n.fitness_score for n in successful]
-            total = sum(weights)
-            if total > 0:
-                weights = [w/total for w in weights]
-                import random
-                return random.choices(successful, weights=weights)[0]
-            return random.choice(successful)
+        """Select a parent node for mutation (weighted by fitness score only)"""
+        import random
+        
+        # Use fitness-based selection for all nodes, not just successful ones
+        # Give even 0-score nodes a 0.1 minimum weight for diversity
+        weights = [max(n.fitness_score, 0.1) for n in parent_nodes]
+        total = sum(weights)
+        
+        if total > 0:
+            weights = [w/total for w in weights]
+            return random.choices(parent_nodes, weights=weights)[0]
+        
+        # Fallback to uniform random if all weights are zero
         return random.choice(parent_nodes)
 
     def _select_mutation_style(self, parent: AttackNode) -> AttackStyle:
