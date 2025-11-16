@@ -22,6 +22,7 @@ from app.models import StartAttackRequest, StartAttackResponse, AttackResults
 from app.websocket_manager import manager as ws_manager
 from app.state_manager import state_manager
 from app.orchestrator import AttackOrchestrator
+from app.jailbreak_discovery_service import get_discovery_service
 
 # Configure logging
 logging.basicConfig(
@@ -201,6 +202,82 @@ async def get_attack_status(attack_id: str):
         "started_at": session.started_at.isoformat(),
         "completed_at": session.completed_at.isoformat() if session.completed_at else None
     }
+
+
+# ============================================================================
+# Jailbreak Discovery Endpoints
+# ============================================================================
+
+@app.get("/api/v1/jailbreaks")
+async def get_jailbreaks(limit: int = 50):
+    """
+    Get cached jailbreak findings from most recent discovery.
+
+    Args:
+        limit: Maximum number of findings to return (default: 50)
+
+    Returns:
+        List of jailbreak findings with metadata
+    """
+    discovery_service = get_discovery_service()
+    findings = discovery_service.get_cached_findings(limit=limit)
+
+    return {
+        "findings": findings,
+        "count": len(findings),
+        "cached": True
+    }
+
+
+@app.post("/api/v1/jailbreaks/discover")
+async def discover_jailbreaks(max_results_per_query: int = 3):
+    """
+    Start a new jailbreak discovery session using Valyu DeepSearch.
+
+    This is an async operation - use the returned discovery_id to check progress.
+
+    Args:
+        max_results_per_query: Number of results per search query (default: 3)
+
+    Returns:
+        Discovery session metadata with initial findings
+    """
+    discovery_id = str(uuid4())
+    discovery_service = get_discovery_service()
+
+    # Start discovery asynchronously
+    asyncio.create_task(
+        discovery_service.start_discovery(
+            discovery_id=discovery_id,
+            max_results_per_query=max_results_per_query
+        )
+    )
+
+    return {
+        "discovery_id": discovery_id,
+        "status": "started",
+        "message": "Jailbreak discovery initiated. Use GET /api/v1/jailbreaks/status/{discovery_id} to check progress."
+    }
+
+
+@app.get("/api/v1/jailbreaks/status/{discovery_id}")
+async def get_discovery_status(discovery_id: str):
+    """
+    Get the status of a jailbreak discovery session.
+
+    Args:
+        discovery_id: ID of the discovery session
+
+    Returns:
+        Discovery status and progress information
+    """
+    discovery_service = get_discovery_service()
+    status = discovery_service.get_discovery_status(discovery_id)
+
+    if "error" in status:
+        raise HTTPException(status_code=404, detail=status["error"])
+
+    return status
 
 
 if __name__ == "__main__":

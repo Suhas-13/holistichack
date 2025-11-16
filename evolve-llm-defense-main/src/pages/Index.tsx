@@ -4,6 +4,7 @@ import EvolutionCanvas from "@/components/EvolutionCanvas";
 import NodeDetailsPanel from "@/components/NodeDetailsPanel";
 import ResultsPanel from "@/components/ResultsPanel";
 import AgentProfilePanel from "@/components/AgentProfilePanel";
+import JailbreaksPanel from "@/components/JailbreaksPanel";
 import {
   AttackNode,
   ClusterData,
@@ -28,6 +29,7 @@ const Index = () => {
   const [selectedNode, setSelectedNode] = useState<AttackNode | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [showAgentProfile, setShowAgentProfile] = useState(false);
+  const [showJailbreaks, setShowJailbreaks] = useState(false);
   const [clusters, setClusters] = useState<ClusterData[]>([]);
   const [nodes, setNodes] = useState<Map<string, AttackNode>>(new Map());
   const [isRunning, setIsRunning] = useState(false);
@@ -362,6 +364,7 @@ const Index = () => {
               onClick={() => {
                 setShowResults(false);
                 setShowAgentProfile(!showAgentProfile);
+                setShowJailbreaks(false);
               }}
               disabled={!attackId || isRunning}
               className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
@@ -375,7 +378,22 @@ const Index = () => {
             <button
               onClick={() => {
                 setShowAgentProfile(false);
+                setShowResults(false);
+                setShowJailbreaks(!showJailbreaks);
+              }}
+              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
+                showJailbreaks
+                  ? "bg-accent/20 border border-accent/50 shadow-lg shadow-accent/20"
+                  : "hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/20"
+              }`}
+            >
+              📚 Jailbreaks
+            </button>
+            <button
+              onClick={() => {
+                setShowAgentProfile(false);
                 setShowResults(!showResults);
+                setShowJailbreaks(false);
               }}
               className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
                 showResults
@@ -407,11 +425,15 @@ const Index = () => {
           />
         </div>
 
-        {/* Side Panel - Agent Profile, Node Details, or Results */}
+        {/* Side Panel - Agent Profile, Jailbreaks, Node Details, or Results */}
         {showAgentProfile ? (
           <AgentProfilePanel
             attackId={attackId}
             onClose={() => setShowAgentProfile(false)}
+          />
+        ) : showJailbreaks ? (
+          <JailbreaksPanel
+            onClose={() => setShowJailbreaks(false)}
           />
         ) : showResults ? (
           <ResultsPanel clusters={clustersWithNodes} attackId={attackId} />

@@ -111,6 +111,41 @@ export class ApiService {
 
         return response.json();
     }
+
+    async getJailbreaks(limit: number = 50): Promise<any> {
+        const response = await fetch(`${API_BASE_URL}/api/v1/jailbreaks?limit=${limit}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to get jailbreaks: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
+    async discoverJailbreaks(maxResultsPerQuery: number = 3): Promise<any> {
+        const response = await fetch(
+            `${API_BASE_URL}/api/v1/jailbreaks/discover?max_results_per_query=${maxResultsPerQuery}`,
+            {
+                method: "POST",
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to start jailbreak discovery: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
+    async getDiscoveryStatus(discoveryId: string): Promise<any> {
+        const response = await fetch(`${API_BASE_URL}/api/v1/jailbreaks/status/${discoveryId}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to get discovery status: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
 }
 
 type EventHandler = (data: unknown) => void;
