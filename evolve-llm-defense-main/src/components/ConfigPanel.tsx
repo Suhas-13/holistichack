@@ -43,9 +43,9 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
   const [newGoalLabel, setNewGoalLabel] = useState("");
   const [newGoalDescription, setNewGoalDescription] = useState("");
   const [seedCount, setSeedCount] = useState(20);
-  const [modelProvider, setModelProvider] = useState<"holistic" | "custom">("holistic");
+  const [modelProvider, setModelProvider] = useState<"holistic" | "custom">("custom");
   const [holisticAgent, setHolisticAgent] = useState("bear");
-  const [customModel, setCustomModel] = useState("x-ai/grok-4-fast");
+  const [customModel, setCustomModel] = useState("http://localhost:5002/api/insurance");
   const [maxEvolutionSteps, setMaxEvolutionSteps] = useState(100);
 
   // Holistic AI agents
@@ -61,6 +61,7 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
 
   // Custom OpenRouter models
   const customModels = [
+    { value: "http://localhost:5002/api/insurance", label: "🏢 Insurance Agent (Demo)" },
     { value: "x-ai/grok-4-fast", label: "Grok 4 Fast" },
     { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
     { value: "anthropic/claude-sonnet-4.5", label: "Claude Sonnet 4.5" },

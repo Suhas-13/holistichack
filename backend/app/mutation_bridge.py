@@ -556,13 +556,13 @@ class MutationSystemBridge:
             # Use Holistic AI client for known agents
             return HolisticAgentClient(agent_name=target_endpoint)
         elif target_endpoint.startswith("http://") or target_endpoint.startswith("https://"):
-            # Custom HTTP endpoint (like http://localhost:5001/api/insurance)
+            # Custom HTTP endpoint (like http://localhost:5002/api/insurance)
             try:
-                from custom_client import CustomEndpointClient
+                from app.custom_client import CustomEndpointClient
                 agent_name = target_endpoint.split('/')[-1]  # Extract last part as name
                 return CustomEndpointClient(endpoint_url=target_endpoint, agent_name=agent_name)
             except ImportError:
-                logger.error("Could not import CustomEndpointClient. Make sure insurance_agent is in Python path.")
+                logger.error("Could not import CustomEndpointClient. Make sure custom_client.py is in app directory.")
                 raise
         else:
             # Use OpenRouter for custom models (they contain "/" like "x-ai/grok-4-fast")
