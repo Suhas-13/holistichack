@@ -21,6 +21,12 @@ mutations_path = os.path.abspath(os.path.join(
 if mutations_path not in sys.path:
     sys.path.insert(0, mutations_path)
 
+# Add insurance_agent directory to path
+insurance_agent_path = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..', 'insurance_agent'))
+if insurance_agent_path not in sys.path:
+    sys.path.insert(0, insurance_agent_path)
+
 try:
     from mutation_attack_system import (
         AttackNode as MutationAttackNode,
@@ -473,6 +479,15 @@ class MutationSystemBridge:
         if target_endpoint in holistic_agents:
             # Use Holistic AI client for known agents
             return HolisticAgentClient(agent_name=target_endpoint)
+        elif target_endpoint.startswith("http://") or target_endpoint.startswith("https://"):
+            # Custom HTTP endpoint (like http://localhost:5001/api/insurance)
+            try:
+                from custom_client import CustomEndpointClient
+                agent_name = target_endpoint.split('/')[-1]  # Extract last part as name
+                return CustomEndpointClient(endpoint_url=target_endpoint, agent_name=agent_name)
+            except ImportError:
+                logger.error("Could not import CustomEndpointClient. Make sure insurance_agent is in Python path.")
+                raise
         else:
             # Use OpenRouter for custom models (they contain "/" like "x-ai/grok-4-fast")
             return OpenRouterClient(model_id=target_endpoint)
