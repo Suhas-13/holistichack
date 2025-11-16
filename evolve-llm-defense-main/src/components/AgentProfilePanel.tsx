@@ -396,11 +396,13 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
             <Card className="glass p-5 border-border/50 space-y-4">
               <div className="flex items-center gap-2">
                 <Brain className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold">Psychological Profile</h3>
+                <h3 className="font-semibold">Security Posture</h3>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {profile.psychological_profile || "No psychological profile available."}
-              </p>
+              <div className="glass p-4 rounded-lg border border-border/30 bg-muted/5">
+                <pre className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans">
+                  {profile.psychological_profile || "No security posture analysis available."}
+                </pre>
+              </div>
 
               <div className="pt-3 border-t border-border/50">
                 <div className="flex items-center gap-2 mb-2">
@@ -424,26 +426,32 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
             <Card className="glass p-5 border-border/50 space-y-4">
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-accent" />
-                <h3 className="font-semibold">Overall Assessment</h3>
+                <h3 className="font-semibold">Threat Assessment</h3>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {profile.overall_assessment || "No assessment available."}
-              </p>
+              <div className="glass p-4 rounded-lg border border-border/30 bg-muted/5">
+                <pre className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans">
+                  {profile.overall_assessment || "No threat assessment available yet. Complete the analysis to see threat modeling."}
+                </pre>
+              </div>
             </Card>
 
             {/* Strengths */}
             <Card className="glass p-5 border-border/50 space-y-3">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-green-500" />
-                <h3 className="font-semibold">Strengths</h3>
+                <h3 className="font-semibold">Defense Strengths</h3>
               </div>
               <div className="space-y-2">
-                {profile.strengths.map((strength, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2" />
-                    <p className="text-sm text-muted-foreground flex-1">{strength}</p>
-                  </div>
-                ))}
+                {profile.strengths && profile.strengths.length > 0 ? (
+                  profile.strengths.map((strength, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2" />
+                      <p className="text-sm text-muted-foreground flex-1">{strength}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No defense strengths identified yet. Run more attacks to analyze defenses.</p>
+                )}
               </div>
             </Card>
 
@@ -451,15 +459,19 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
             <Card className="glass p-5 border-border/50 space-y-3">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
-                <h3 className="font-semibold">Critical Weaknesses</h3>
+                <h3 className="font-semibold">Critical Vulnerabilities</h3>
               </div>
               <div className="space-y-2">
-                {profile.weaknesses.map((weakness, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2" />
-                    <p className="text-sm text-muted-foreground flex-1">{weakness}</p>
-                  </div>
-                ))}
+                {profile.weaknesses && profile.weaknesses.length > 0 ? (
+                  profile.weaknesses.map((weakness, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2" />
+                      <p className="text-sm text-muted-foreground flex-1">{weakness}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No critical vulnerabilities identified yet. Run more attacks to discover weaknesses.</p>
+                )}
               </div>
             </Card>
 
@@ -585,19 +597,23 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <p className="text-muted-foreground mb-1">Confidence</p>
-                    <Progress value={behavior.confidence * 100} className="h-2" />
-                    <p className="text-right mt-1 font-medium">{(behavior.confidence * 100).toFixed(0)}%</p>
+                <div className="grid grid-cols-3 gap-4 text-xs">
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground">Confidence</p>
+                    <div className="space-y-1">
+                      <Progress value={behavior.confidence * 100} className="h-2" />
+                      <p className="text-right font-medium">{(behavior.confidence * 100).toFixed(0)}%</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground mb-1">Exploitability</p>
-                    <Progress value={behavior.exploitability * 100} className="h-2" />
-                    <p className="text-right mt-1 font-medium">{(behavior.exploitability * 100).toFixed(0)}%</p>
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground">Exploitability</p>
+                    <div className="space-y-1">
+                      <Progress value={behavior.exploitability * 100} className="h-2" />
+                      <p className="text-right font-medium">{(behavior.exploitability * 100).toFixed(0)}%</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground mb-1">Observed</p>
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground">Observed</p>
                     <p className="text-2xl font-bold text-primary">{behavior.observed_count}</p>
                   </div>
                 </div>
@@ -610,7 +626,7 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
                   <div className="pt-3 border-t border-border/50">
                     <p className="text-xs font-medium mb-2 flex items-center gap-2 text-muted-foreground">
                       <Link className="w-3 h-3" />
-                      Example Attack Traces:
+                      Representative Attack Traces:
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {behavior.representative_trace_ids.map((traceId) => (
@@ -695,7 +711,7 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
                   <div className="pt-3 border-t border-border/50">
                     <p className="text-xs font-medium mb-2 flex items-center gap-2 text-muted-foreground">
                       <Link className="w-3 h-3" />
-                      Example Attack Traces:
+                      Representative Attack Traces:
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {failure.representative_trace_ids.map((traceId) => (
