@@ -3,14 +3,15 @@ import { ClusterData } from "@/types/evolution";
 import { ApiService, AttackResults as ApiAttackResults } from "@/services/api";
 import { ScrollArea } from "./ui/scroll-area";
 import { Badge } from "./ui/badge";
-import { TrendingUp, TrendingDown, Target, Zap } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, Zap, X } from "lucide-react";
 
 interface ResultsPanelProps {
   clusters: ClusterData[];
   attackId: string | null;
+  onClose?: () => void;
 }
 
-const ResultsPanel = memo(({ clusters, attackId }: ResultsPanelProps) => {
+const ResultsPanel = memo(({ clusters, attackId, onClose }: ResultsPanelProps) => {
   const [apiResults, setApiResults] = useState<ApiAttackResults | null>(null);
   const apiService = ApiService.getInstance();
 
@@ -38,11 +39,23 @@ const ResultsPanel = memo(({ clusters, attackId }: ResultsPanelProps) => {
   }, [clusters]);
 
   return (
-    <aside className="w-96 glass-intense border-l border-border/50 flex flex-col animate-slide-in">
+    <div className="w-full h-full glass border border-border/50 rounded-xl flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-border/50">
-        <h2 className="text-xl font-semibold text-foreground mb-1">Results Summary</h2>
-        <p className="text-sm text-muted-foreground">Evolution insights and successful attacks</p>
+      <div className="p-6 border-b border-border/50 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-1">Results Summary</h2>
+            <p className="text-sm text-muted-foreground">Evolution insights and successful attacks</p>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats */}

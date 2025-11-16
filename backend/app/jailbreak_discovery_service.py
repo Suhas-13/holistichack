@@ -149,13 +149,33 @@ class JailbreakDiscoveryService:
 
     def get_cached_findings(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """Get cached findings from most recent discovery"""
-        findings = self.cached_findings
+        import json
+        from pathlib import Path
+
+        findings = self.cached_findings.copy()
+
+        # Load and include custom jailbreaks
+        custom_file = Path("mutations/custom_jailbreaks/custom_jailbreaks.json")
+        if custom_file.exists():
+            try:
+                with open(custom_file, "r") as f:
+                    custom_jailbreaks = json.load(f)
+                    # Add custom jailbreaks to findings
+                    findings.extend(custom_jailbreaks)
+            except Exception as e:
+                logging.warning(f"Failed to load custom jailbreaks: {e}")
+
         if limit:
             findings = findings[:limit]
         return [self._serialize_finding(f) for f in findings]
 
     def _serialize_finding(self, finding) -> Dict[str, Any]:
         """Convert JailbreakFinding to dict"""
+        # If it's already a dict (custom jailbreak), return it
+        if isinstance(finding, dict):
+            return finding
+
+        # Otherwise convert dataclass to dict
         if hasattr(finding, '__dict__'):
             return {
                 "title": finding.title,

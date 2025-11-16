@@ -390,26 +390,7 @@ const Index = () => {
           </div>
           <div className="flex gap-3">
             <button
-              onClick={() => {
-                setShowResults(false);
-                setShowAgentProfile(!showAgentProfile);
-                setShowJailbreaks(false);
-              }}
-              disabled={!attackId || isRunning}
-              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
-                showAgentProfile
-                  ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
-                  : "hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20"
-              } ${!attackId || isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              🔬 Agent Profile
-            </button>
-            <button
-              onClick={() => {
-                setShowAgentProfile(false);
-                setShowResults(false);
-                setShowJailbreaks(!showJailbreaks);
-              }}
+              onClick={() => setShowJailbreaks(!showJailbreaks)}
               className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
                 showJailbreaks
                   ? "bg-accent/20 border border-accent/50 shadow-lg shadow-accent/20"
@@ -417,20 +398,6 @@ const Index = () => {
               }`}
             >
               📚 Jailbreaks
-            </button>
-            <button
-              onClick={() => {
-                setShowAgentProfile(false);
-                setShowResults(!showResults);
-                setShowJailbreaks(false);
-              }}
-              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
-                showResults
-                  ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
-                  : "hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20"
-              }`}
-            >
-              {showResults ? "Hide Results" : "View Results"}
             </button>
           </div>
         </div>
@@ -443,6 +410,17 @@ const Index = () => {
           onStart={startEvolution}
           onStop={stopEvolution}
           clusters={clustersWithNodes}
+          attackId={attackId}
+          onShowAgentProfile={() => {
+            setShowAgentProfile(!showAgentProfile);
+            setShowResults(false);
+          }}
+          onShowResults={() => {
+            setShowResults(!showResults);
+            setShowAgentProfile(false);
+          }}
+          showAgentProfile={showAgentProfile}
+          showResults={showResults}
         />
 
         {/* Main Canvas */}
@@ -454,18 +432,9 @@ const Index = () => {
           />
         </div>
 
-        {/* Side Panel - Agent Profile, Jailbreaks, Node Details, or Results */}
-        {showAgentProfile ? (
-          <AgentProfilePanel
-            attackId={attackId}
-            onClose={() => setShowAgentProfile(false)}
-          />
-        ) : showJailbreaks ? (
-          <JailbreaksPanel
-            onClose={() => setShowJailbreaks(false)}
-          />
-        ) : showResults ? (
-          <ResultsPanel clusters={clustersWithNodes} attackId={attackId} />
+        {/* Right Side Panel - Only Jailbreaks and Node Details */}
+        {showJailbreaks ? (
+          <JailbreaksPanel onClose={() => setShowJailbreaks(false)} />
         ) : selectedNode ? (
           <NodeDetailsPanel
             node={selectedNode}
@@ -473,6 +442,30 @@ const Index = () => {
           />
         ) : null}
       </div>
+
+      {/* Centered Modal Overlays */}
+      {showAgentProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-5xl h-[90vh] animate-in fade-in zoom-in duration-300">
+            <AgentProfilePanel
+              attackId={attackId}
+              onClose={() => setShowAgentProfile(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {showResults && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-5xl h-[90vh] animate-in fade-in zoom-in duration-300">
+            <ResultsPanel
+              clusters={clustersWithNodes}
+              attackId={attackId}
+              onClose={() => setShowResults(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

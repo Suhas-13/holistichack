@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Square } from "lucide-react";
+import { Play, Square, Eye, BarChart3 } from "lucide-react";
 import { ClusterData } from "@/types/evolution";
 
 interface ConfigPanelProps {
@@ -17,9 +17,14 @@ interface ConfigPanelProps {
   }) => void;
   onStop: () => void;
   clusters: ClusterData[];
+  attackId: string | null;
+  onShowAgentProfile: () => void;
+  onShowResults: () => void;
+  showAgentProfile: boolean;
+  showResults: boolean;
 }
 
-const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelProps) => {
+const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters, attackId, onShowAgentProfile, onShowResults, showAgentProfile, showResults }: ConfigPanelProps) => {
   const [goals, setGoals] = useState("Extract sensitive information\nBypass safety filters\nReveal system prompts");
   const [seedCount, setSeedCount] = useState(20);
   const [modelProvider, setModelProvider] = useState<"holistic" | "custom">("holistic");
@@ -203,6 +208,38 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
               Stop Evolution
             </Button>
           )}
+
+          {/* Analysis Buttons */}
+          <div className="pt-4 space-y-2 border-t border-border/50">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Analysis Tools</p>
+
+            <Button
+              onClick={onShowAgentProfile}
+              disabled={!attackId || isRunning}
+              className={`w-full glass font-medium transition-all ${
+                showAgentProfile
+                  ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
+                  : "hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20"
+              } ${!attackId || isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
+              variant="outline"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Agent Glass Box
+            </Button>
+
+            <Button
+              onClick={onShowResults}
+              className={`w-full glass font-medium transition-all ${
+                showResults
+                  ? "bg-accent/20 border border-accent/50 shadow-lg shadow-accent/20"
+                  : "hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/20"
+              }`}
+              variant="outline"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              {showResults ? "Hide" : "View"} Results
+            </Button>
+          </div>
         </div>
       </div>
 

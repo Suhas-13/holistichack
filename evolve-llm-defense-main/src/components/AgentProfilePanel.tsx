@@ -256,7 +256,7 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
   };
 
   return (
-    <div className="w-[600px] glass border-l border-border/50 overflow-hidden flex flex-col animate-in slide-in-from-right duration-500">
+    <div className="w-full h-full glass border border-border/50 rounded-xl overflow-hidden flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5">
         <div className="flex items-center justify-between mb-4">

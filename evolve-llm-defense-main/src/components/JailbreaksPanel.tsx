@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Zap,
   Search,
@@ -12,6 +15,7 @@ import {
   Sparkles,
   RefreshCw,
   X,
+  Plus,
 } from "lucide-react";
 import { ApiService } from "@/services/api";
 import { toast } from "sonner";
@@ -40,6 +44,13 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
   const [discovering, setDiscovering] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newJailbreak, setNewJailbreak] = useState({
+    title: "",
+    content: "",
+    url: "",
+    category: "custom_jailbreaks",
+  });
 
   useEffect(() => {
     loadJailbreaks();
@@ -123,6 +134,32 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
     }
   };
 
+  const saveCustomJailbreak = async () => {
+    if (!newJailbreak.title || !newJailbreak.content) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      const apiService = ApiService.getInstance();
+      await apiService.saveCustomJailbreak({
+        ...newJailbreak,
+        timestamp: new Date().toISOString(),
+        relevance_score: 1.0,
+        source_query: "custom",
+        query_category: "custom_jailbreaks",
+      });
+
+      toast.success("Custom jailbreak saved!");
+      setShowAddDialog(false);
+      setNewJailbreak({ title: "", content: "", url: "", category: "custom_jailbreaks" });
+      await loadJailbreaks();
+    } catch (error) {
+      console.error("Failed to save custom jailbreak:", error);
+      toast.error("Failed to save jailbreak");
+    }
+  };
+
   const categories = Array.from(
     new Set(findings.map((f) => f.query_category))
   ).sort();
@@ -175,6 +212,15 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
                   Discover New
                 </>
               )}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setShowAddDialog(true)}
+              variant="outline"
+              className="glass"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Custom
             </Button>
             <button
               onClick={onClose}
@@ -303,6 +349,73 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
           </div>
         )}
       </ScrollArea>
+
+      {/* Add Custom Jailbreak Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-2xl glass">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-accent" />
+              Add Custom Jailbreak
+            </DialogTitle>
+            <DialogDescription>
+              Add your own jailbreak technique or research finding to the library
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                placeholder="e.g., DAN (Do Anything Now) Prompt"
+                value={newJailbreak.title}
+                onChange={(e) => setNewJailbreak({ ...newJailbreak, title: e.target.value })}
+                className="glass"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="content">Description/Content *</Label>
+              <Textarea
+                id="content"
+                placeholder="Describe the jailbreak technique, how it works, and when to use it..."
+                value={newJailbreak.content}
+                onChange={(e) => setNewJailbreak({ ...newJailbreak, content: e.target.value })}
+                className="glass min-h-[150px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="url">Source URL (optional)</Label>
+              <Input
+                id="url"
+                placeholder="https://..."
+                value={newJailbreak.url}
+                onChange={(e) => setNewJailbreak({ ...newJailbreak, url: e.target.value })}
+                className="glass"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddDialog(false)}
+                className="glass"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={saveCustomJailbreak}
+                className="bg-accent hover:bg-accent/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Save Jailbreak
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

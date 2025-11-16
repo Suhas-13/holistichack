@@ -281,6 +281,52 @@ async def get_discovery_status(discovery_id: str):
     return status
 
 
+@app.post("/api/v1/jailbreaks/custom")
+async def save_custom_jailbreak(jailbreak: dict):
+    """
+    Save a custom jailbreak technique to the library.
+
+    Args:
+        jailbreak: Custom jailbreak data (title, content, url, etc.)
+
+    Returns:
+        Success confirmation with saved jailbreak
+    """
+    import json
+    from pathlib import Path
+
+    # Create custom jailbreaks directory if it doesn't exist
+    custom_dir = Path("mutations/custom_jailbreaks")
+    custom_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load existing custom jailbreaks
+    custom_file = custom_dir / "custom_jailbreaks.json"
+    if custom_file.exists():
+        with open(custom_file, "r") as f:
+            custom_jailbreaks = json.load(f)
+    else:
+        custom_jailbreaks = []
+
+    # Add new jailbreak
+    custom_jailbreaks.append(jailbreak)
+
+    # Save updated list
+    with open(custom_file, "w") as f:
+        json.dump(custom_jailbreaks, f, indent=2)
+
+    # Also update the discovery service cache to include custom jailbreaks
+    discovery_service = get_discovery_service()
+    discovery_service.cached_findings.append(jailbreak)
+
+    logger.info(f"Saved custom jailbreak: {jailbreak.get('title', 'Untitled')}")
+
+    return {
+        "success": True,
+        "message": "Custom jailbreak saved successfully",
+        "jailbreak": jailbreak
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
 

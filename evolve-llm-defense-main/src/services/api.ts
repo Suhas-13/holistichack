@@ -148,6 +148,22 @@ export class ApiService {
 
         return response.json();
     }
+
+    async saveCustomJailbreak(jailbreak: any): Promise<any> {
+        const response = await fetch(`${API_BASE_URL}/api/v1/jailbreaks/custom`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(jailbreak),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to save custom jailbreak: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
 }
 
 type EventHandler = (data: unknown) => void;
