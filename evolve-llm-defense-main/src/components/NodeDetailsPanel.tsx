@@ -12,7 +12,7 @@ interface NodeDetailsPanelProps {
 
 const NodeDetailsPanel = memo(({ node, onClose }: NodeDetailsPanelProps) => {
   return (
-    <aside className="w-96 glass-intense border-l border-border/50 flex flex-col animate-slide-in">
+    <aside className="w-[550px] glass-intense border-l border-border/50 flex flex-col animate-slide-in">
       {/* Header */}
       <div className="p-6 border-b border-border/50">
         <div className="flex items-start justify-between mb-4">

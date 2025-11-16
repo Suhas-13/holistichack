@@ -38,6 +38,15 @@ const Index = () => {
   const apiService = useRef(ApiService.getInstance());
   const wsService = useRef<WebSocketService | null>(null);
 
+  const handleNodeSelect = (node: AttackNode | null) => {
+    setSelectedNode(node);
+    if (node) {
+      // Close other panels when selecting a node
+      setShowResults(false);
+      setShowJailbreaks(false);
+    }
+  };
+
   const startEvolution = async (config: {
     targetEndpoint: string;
     attackGoals: string[];
@@ -388,6 +397,42 @@ const Index = () => {
             </h1>
             <p className="text-sm text-muted-foreground">Evolving LLM jailbreak attacks</p>
           </div>
+
+          {/* Center Analysis Tools */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setShowAgentProfile(!showAgentProfile);
+                setShowResults(false);
+                setSelectedNode(null);
+                setShowJailbreaks(false);
+              }}
+              disabled={!attackId || isRunning}
+              className={`glass px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
+                showAgentProfile
+                  ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
+                  : "hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20"
+              } ${!attackId || isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              🔬 Agent Glass Box
+            </button>
+            <button
+              onClick={() => {
+                setShowResults(!showResults);
+                setShowAgentProfile(false);
+                setSelectedNode(null);
+                setShowJailbreaks(false);
+              }}
+              className={`glass px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
+                showResults
+                  ? "bg-accent/20 border border-accent/50 shadow-lg shadow-accent/20"
+                  : "hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/20"
+              }`}
+            >
+              📊 {showResults ? "Hide" : "View"} Results
+            </button>
+          </div>
+
           <div className="flex gap-3">
             <button
               onClick={() => setShowJailbreaks(!showJailbreaks)}
@@ -431,7 +476,7 @@ const Index = () => {
         <div className="flex-1 relative">
           <EvolutionCanvas
             clusters={clustersWithNodes}
-            onNodeSelect={setSelectedNode}
+            onNodeSelect={handleNodeSelect}
             isRunning={isRunning}
           />
         </div>
