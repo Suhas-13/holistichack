@@ -114,8 +114,8 @@ const Index = () => {
         
         // Smart cluster positioning with space-finding algorithm
         const minDistance = 350;
-        const minX = 300;
-        const maxX = 1300;
+        const minX = 220;
+        const maxX = 1220;
         const minY = 200;
         const maxY = 700;
         
