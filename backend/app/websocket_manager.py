@@ -94,7 +94,7 @@ class ConnectionManager:
         )
         await self.broadcast_event(attack_id, event)
 
-    async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str, generation: int = 0):
+    async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str, generation: int = 0, metadata: dict = None):
         """Convenience method for node_add events"""
         event = WebSocketEvent(
             type="node_add",
@@ -104,7 +104,8 @@ class ConnectionManager:
                 "parent_ids": parent_ids,
                 "attack_type": attack_type,
                 "status": status,
-                "generation": generation
+                "generation": generation,
+                "metadata": metadata or {}
             }
         )
         await self.broadcast_event(attack_id, event)
