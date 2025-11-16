@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Square } from "lucide-react";
 import { ClusterData } from "@/types/evolution";
 
@@ -18,9 +19,34 @@ interface ConfigPanelProps {
 }
 
 const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelProps) => {
-  const [endpoint, setEndpoint] = useState("fox");
   const [goals, setGoals] = useState("Extract sensitive information\nBypass safety filters\nReveal system prompts");
   const [seedCount, setSeedCount] = useState(20);
+  const [modelProvider, setModelProvider] = useState<"holistic" | "custom">("holistic");
+  const [holisticAgent, setHolisticAgent] = useState("bear");
+  const [customModel, setCustomModel] = useState("x-ai/grok-4-fast");
+
+  // Holistic AI agents
+  const holisticAgents = [
+    { value: "elephant", label: "🐘 Elephant Agent" },
+    { value: "fox", label: "🦊 Fox Agent" },
+    { value: "eagle", label: "🦅 Eagle Agent" },
+    { value: "ant", label: "🐜 Ant Agent" },
+    { value: "wolf", label: "🐺 Wolf Agent" },
+    { value: "bear", label: "🐻 Bear Agent" },
+    { value: "chameleon", label: "🦎 Chameleon Agent" }
+  ];
+
+  // Custom OpenRouter models
+  const customModels = [
+    { value: "x-ai/grok-4-fast", label: "Grok 4 Fast" },
+    { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { value: "anthropic/claude-sonnet-4.5", label: "Claude Sonnet 4.5" },
+    { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+    { value: "deepseek/deepseek-chat-v3-0324", label: "DeepSeek Chat V3" },
+    { value: "openai/gpt-5", label: "GPT-5" },
+    { value: "mistralai/mistral-nemo", label: "Mistral Nemo" },
+    { value: "openai/gpt-oss-120b", label: "GPT OSS 120B" }
+  ];
 
   const handleStart = () => {
     const attackGoals = goals
@@ -28,8 +54,11 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
       .map((g) => g.trim())
       .filter((g) => g.length > 0);
     
+    // Use the selected model as the endpoint
+    const targetEndpoint = modelProvider === "holistic" ? holisticAgent : customModel;
+    
     onStart({
-      targetEndpoint: endpoint,
+      targetEndpoint,
       attackGoals,
       seedAttackCount: seedCount,
     });
@@ -57,17 +86,51 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="endpoint" className="text-foreground">
-            Model Endpoint
+          <Label className="text-foreground">
+            Model Provider
           </Label>
-          <Input
-            id="endpoint"
-            value={endpoint}
-            onChange={(e) => setEndpoint(e.target.value)}
-            placeholder="https://api.example.com/v1/chat"
-            className="glass border-border/50 focus:border-primary/50 transition-colors"
-            disabled={isRunning}
-          />
+          <Select value={modelProvider} onValueChange={(value: "holistic" | "custom") => setModelProvider(value)} disabled={isRunning}>
+            <SelectTrigger className="glass border-border/50 focus:border-primary/50 transition-colors">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="holistic">Holistic AI</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-foreground">
+            {modelProvider === "holistic" ? "Agent" : "Model"}
+          </Label>
+          {modelProvider === "holistic" ? (
+            <Select value={holisticAgent} onValueChange={setHolisticAgent} disabled={isRunning}>
+              <SelectTrigger className="glass border-border/50 focus:border-primary/50 transition-colors">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {holisticAgents.map((agent) => (
+                  <SelectItem key={agent.value} value={agent.value}>
+                    {agent.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Select value={customModel} onValueChange={setCustomModel} disabled={isRunning}>
+              <SelectTrigger className="glass border-border/50 focus:border-primary/50 transition-colors">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {customModels.map((model) => (
+                  <SelectItem key={model.value} value={model.value}>
+                    {model.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -105,7 +168,7 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
             <Button
               onClick={handleStart}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30"
-              disabled={!endpoint}
+              disabled={modelProvider === "holistic" ? !holisticAgent : !customModel}
             >
               <Play className="w-4 h-4 mr-2" />
               Start Evolution
