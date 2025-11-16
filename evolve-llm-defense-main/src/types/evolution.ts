@@ -83,6 +83,8 @@ export interface NodeAddPayload {
   parent_ids: string[];
   attack_type: string;
   status: string;
+  generation?: number;
+  metadata?: Record<string, any>;
 }
 
 export interface NodeUpdatePayload {
