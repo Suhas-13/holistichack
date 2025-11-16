@@ -472,12 +472,24 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
                 <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                   {profile.psychological_profile ? (() => {
                     let text = profile.psychological_profile;
-                    // Remove markdown formatting but preserve newlines
-                    text = text.replace(/\*\*/g, '');     // Remove bold
-                    text = text.replace(/\*/g, '');       // Remove italic/bullets
-                    text = text.replace(/#{1,6}\s/g, ''); // Remove headers
-                    // Only collapse excessive newlines (3+) to double newlines
+
+                    // Convert markdown headers to uppercase section titles
+                    text = text.replace(/###\s+(.+)/g, '\n$1:\n');
+                    text = text.replace(/##\s+(.+)/g, '\n$1:\n');
+                    text = text.replace(/#\s+(.+)/g, '\n$1:\n');
+
+                    // Remove bold/italic markers but keep the text
+                    text = text.replace(/\*\*(.+?)\*\*/g, '$1');
+                    text = text.replace(/\*(.+?)\*/g, '$1');
+
+                    // Convert bullet points to simple dashes
+                    text = text.replace(/^\s*[-*]\s+/gm, '• ');
+
+                    // Preserve paragraph spacing (keep double newlines)
+                    // Only collapse 3+ newlines to double
                     text = text.replace(/\n{3,}/g, '\n\n');
+
+                    // Clean up any excessive spacing at start/end
                     return text.trim();
                   })() : "No security posture analysis available."}
                 </p>
