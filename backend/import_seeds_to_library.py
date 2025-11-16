@@ -45,7 +45,7 @@ def import_seeds_to_library():
             "relevance_score": 1.0,
             "source_query": "enhanced_seeds_import",
             "query_category": "attack_techniques",
-            "authors": ["Red Team Research"],
+            "authors": ["Valyu"],
             "publication_date": None,
             "citation_string": None,
             "full_prompt": seed.prompt  # Store full prompt separately
