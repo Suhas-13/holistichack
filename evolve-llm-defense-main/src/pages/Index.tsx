@@ -15,6 +15,7 @@ import {
 } from "@/types/evolution";
 import { ApiService, WebSocketService } from "@/services/api";
 import { toast } from "sonner";
+import { Eye, BarChart3 } from "lucide-react";
 
 const CLUSTER_COLORS = [
   "hsl(189, 94%, 55%)",
@@ -437,7 +438,7 @@ const Index = () => {
               </div>
 
               <span className="relative z-10 flex items-center gap-1.5">
-                <span className="text-base">🔬</span>
+                <Eye className="w-4 h-4" />
                 <span>Agent Glass Box</span>
               </span>
             </button>
@@ -474,7 +475,7 @@ const Index = () => {
               </div>
 
               <span className="relative z-10 flex items-center gap-1.5">
-                <span className="text-base">📊</span>
+                <BarChart3 className="w-4 h-4" />
                 <span>{showResults ? "Hide" : "View"} Results</span>
               </span>
             </button>
