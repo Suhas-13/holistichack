@@ -39,9 +39,9 @@ const ResultsPanel = memo(({ clusters, attackId, onClose }: ResultsPanelProps) =
   }, [clusters]);
 
   return (
-    <div className="w-full h-full glass border border-border/50 rounded-xl flex flex-col overflow-hidden">
+    <aside className="w-96 glass-intense border-l border-border/50 flex flex-col animate-slide-in">
       {/* Header */}
-      <div className="p-6 border-b border-border/50 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5">
+      <div className="p-6 border-b border-border/50">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-foreground mb-1">Results Summary</h2>

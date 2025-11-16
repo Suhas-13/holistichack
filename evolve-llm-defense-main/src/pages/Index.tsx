@@ -414,10 +414,14 @@ const Index = () => {
           onShowAgentProfile={() => {
             setShowAgentProfile(!showAgentProfile);
             setShowResults(false);
+            setSelectedNode(null);
+            setShowJailbreaks(false);
           }}
           onShowResults={() => {
             setShowResults(!showResults);
             setShowAgentProfile(false);
+            setSelectedNode(null);
+            setShowJailbreaks(false);
           }}
           showAgentProfile={showAgentProfile}
           showResults={showResults}
@@ -432,9 +436,15 @@ const Index = () => {
           />
         </div>
 
-        {/* Right Side Panel - Only Jailbreaks and Node Details */}
+        {/* Right Side Panel - Jailbreaks, Results, or Node Details */}
         {showJailbreaks ? (
           <JailbreaksPanel onClose={() => setShowJailbreaks(false)} />
+        ) : showResults ? (
+          <ResultsPanel
+            clusters={clustersWithNodes}
+            attackId={attackId}
+            onClose={() => setShowResults(false)}
+          />
         ) : selectedNode ? (
           <NodeDetailsPanel
             node={selectedNode}
@@ -443,25 +453,19 @@ const Index = () => {
         ) : null}
       </div>
 
-      {/* Centered Modal Overlays */}
+      {/* Centered Modal Overlay - Only Agent Profile */}
       {showAgentProfile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-5xl h-[90vh] animate-in fade-in zoom-in duration-300">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowAgentProfile(false)}
+        >
+          <div
+            className="w-full max-w-5xl h-[90vh] animate-in fade-in zoom-in duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
             <AgentProfilePanel
               attackId={attackId}
               onClose={() => setShowAgentProfile(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {showResults && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-5xl h-[90vh] animate-in fade-in zoom-in duration-300">
-            <ResultsPanel
-              clusters={clustersWithNodes}
-              attackId={attackId}
-              onClose={() => setShowResults(false)}
             />
           </div>
         </div>
