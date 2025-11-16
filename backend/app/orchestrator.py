@@ -414,9 +414,9 @@ class AttackOrchestrator:
             logger.info("GLASS BOX ANALYSIS - Starting")
             logger.info("=" * 60)
 
-            # # Get configuration
-            # config = get_glass_box_config()
-            # logger.info(f"Using Glass Box mode: {config.__class__.__name__}")
+            # Get configuration
+            config = get_glass_box_config()
+            logger.info(f"Using Glass Box mode: {os.getenv('GLASS_BOX_MODE', 'balanced')}")
 
             # Get all attacks
             all_attacks = list(session.nodes.values())

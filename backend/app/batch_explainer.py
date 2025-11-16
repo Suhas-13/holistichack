@@ -348,24 +348,24 @@ Focus on TACTICAL SECURITY ANALYSIS, not generic failure reasons.
         common_patterns = []
         success_factors = []
         failure_reasons = []
-        batch_insight = response  # Full text as fallback
 
         current_section = None
 
         for line in lines:
             line_upper = line.upper()
 
-            if 'COMMON PATTERNS' in line_upper:
+            # Support both old and new security-focused section headers
+            if 'COMMON PATTERNS' in line_upper or 'EXPLOIT MECHANISM' in line_upper or 'ATTACK SOPHISTICATION' in line_upper:
                 current_section = 'patterns'
-            elif 'SUCCESS FACTORS' in line_upper:
+            elif 'SUCCESS FACTORS' in line_upper or 'REAL-WORLD RISK' in line_upper or 'ATTACK SOPHISTICATION' in line_upper:
                 current_section = 'success'
-            elif 'FAILURE REASONS' in line_upper:
+            elif 'FAILURE REASONS' in line_upper or 'DEFENSE MECHANISMS' in line_upper or 'ATTACK WEAKNESSES' in line_upper:
                 current_section = 'failure'
-            elif 'TECHNIQUE INSIGHT' in line_upper or 'RECOMMENDATION' in line_upper:
+            elif 'TECHNIQUE INSIGHT' in line_upper or 'RECOMMENDATION' in line_upper or 'DEFENSE RECOMMENDATION' in line_upper or 'BYPASS POTENTIAL' in line_upper:
                 current_section = 'insight'
-            elif line.strip().startswith('-') or line.strip().startswith('•'):
-                # Bullet point
-                point = line.strip().lstrip('-•').strip()
+            elif line.strip().startswith('-') or line.strip().startswith('•') or (line.strip() and line.strip()[0].isdigit()):
+                # Bullet point or numbered list
+                point = line.strip().lstrip('-•0123456789. ').strip()
                 if point:
                     if current_section == 'patterns':
                         common_patterns.append(point)
