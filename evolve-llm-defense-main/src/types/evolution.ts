@@ -94,6 +94,7 @@ export interface NodeUpdatePayload {
   response?: string | null;
   full_transcript: TranscriptTurn[];
   full_trace?: AttackTrace | null;
+  generation?: number;
 }
 
 export interface EvolutionLinkAddPayload {

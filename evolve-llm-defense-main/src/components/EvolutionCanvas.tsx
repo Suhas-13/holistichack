@@ -7,10 +7,11 @@ import { Button } from "./ui/button";
 interface EvolutionCanvasProps {
   clusters: ClusterData[];
   onNodeSelect: (node: AttackNode) => void;
+  selectedNode?: AttackNode | null;
   isRunning: boolean;
 }
 
-const EvolutionCanvas = memo(({ clusters, onNodeSelect, isRunning }: EvolutionCanvasProps) => {
+const EvolutionCanvas = memo(({ clusters, onNodeSelect, selectedNode, isRunning }: EvolutionCanvasProps) => {
   console.log("[EvolutionCanvas] Rendering with", clusters.length, "clusters");
   const canvasRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
@@ -141,6 +142,7 @@ const EvolutionCanvas = memo(({ clusters, onNodeSelect, isRunning }: EvolutionCa
           <ClusterVisualization
             clusters={filteredClusters}
             onNodeSelect={onNodeSelect}
+            selectedNode={selectedNode}
           />
         </div>
       </div>
