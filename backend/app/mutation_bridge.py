@@ -62,6 +62,9 @@ class MutationSystemBridge:
         self.evaluator = LLMJudgeEvaluator(model_id="anthropic/claude-haiku-4.5", user_defined_goals=attack_goals)
         self.cluster_manager = ClusterManager()
 
+        # Initialize all attack style clusters upfront
+        self._initialize_all_style_clusters()
+
         # Initialize attacker client (OpenRouter with Qwen)
         self.attacker_client = OpenRouterClient(model_id=attacker_model)
 
@@ -72,7 +75,7 @@ class MutationSystemBridge:
         self,
         session: AttackSessionState,
         seed_prompts: List[Dict[str, Any]],
-        batch_size: int = 20
+        batch_size: int = 10
     ) -> List[AttackNode]:
         """
         Execute seed attacks using the mutation system in parallel batches.
@@ -108,9 +111,11 @@ class MutationSystemBridge:
                 )
                 tasks.append(task)
             
-            # Execute batch in parallel
-            batch_results = await asyncio.gather(*tasks)
-            results.extend([r for r in batch_results if r is not None])
+            # Execute batch in parallel but process results as they complete
+            for completed_task in asyncio.as_completed(tasks):
+                result = await completed_task
+                if result is not None:
+                    results.append(result)
             
         return results
     
@@ -186,7 +191,7 @@ class MutationSystemBridge:
         session: AttackSessionState,
         parent_nodes: List[AttackNode],
         num_mutations: int = 5,
-        batch_size: int = 20
+        batch_size: int = 10
     ) -> List[AttackNode]:
         """
         Evolve attacks using mutations from parent nodes in parallel batches.
@@ -228,9 +233,11 @@ class MutationSystemBridge:
                 )
                 tasks.append(task)
             
-            # Execute batch in parallel
-            batch_results = await asyncio.gather(*tasks)
-            results.extend([r for r in batch_results if r is not None])
+            # Execute batch in parallel but process results as they complete
+            for completed_task in asyncio.as_completed(tasks):
+                result = await completed_task
+                if result is not None:
+                    results.append(result)
             
         return results
     
@@ -274,9 +281,14 @@ class MutationSystemBridge:
                 generation=new_generation
             )
 
-            # Use parent's cluster ID instead of creating a new one
-            cluster_id = parent.cluster_id
-            self.cluster_manager.add_node(mutation_node)
+            # Assign to cluster based on mutation style, not parent's cluster
+            mutation_cluster_id = f"cluster_{mutation_style.value.lower().replace(' ', '_')}"
+            
+            # Add to cluster manager with specific cluster
+            mutation_node.cluster_id = mutation_cluster_id
+            self.cluster_manager.add_node_to_specific_cluster(mutation_node, mutation_cluster_id)
+            
+            cluster_id = mutation_cluster_id
 
             # Convert to backend node
             backend_node = self._mutation_to_backend_node(
@@ -579,3 +591,42 @@ class MutationSystemBridge:
             "successful_attacks": successful_attacks,
             "all_attacks": all_attacks
         }
+    
+    def _initialize_all_style_clusters(self):
+        """Initialize all attack style clusters upfront to ensure consistent naming"""
+        import time
+        
+        # All available attack styles
+        all_styles = [
+            AttackStyle.SLANG,
+            AttackStyle.TECHNICAL_TERMS,
+            AttackStyle.ROLE_PLAY,
+            AttackStyle.AUTHORITY_MANIPULATION,
+            AttackStyle.MISSPELLINGS,
+            AttackStyle.WORD_PLAY,
+            AttackStyle.EMOTIONAL_MANIPULATION,
+            AttackStyle.HYPOTHETICALS,
+            AttackStyle.HISTORICAL_SCENARIO,
+            AttackStyle.UNCOMMON_DIALECTS,
+            AttackStyle.MULTITURN,
+            AttackStyle.PYTHON_CODE,
+            AttackStyle.HIDDEN_SCRATCH_PAD,
+            AttackStyle.PHILOSOPHY,
+            AttackStyle.TRUE_PURPOSE
+        ]
+        
+        # Initialize a cluster for each style
+        for style in all_styles:
+            cluster_id = f"cluster_{style.value.lower().replace(' ', '_')}"
+            if cluster_id not in self.cluster_manager.clusters:
+                self.cluster_manager.cluster_metadata[cluster_id] = {
+                    "created_at": time.time(),
+                    "primary_style": style,
+                    "primary_category": None,
+                    "is_style_cluster": True
+                }
+                # Initialize empty cluster
+                self.cluster_manager.clusters[cluster_id] = []
+                logger.info(f"Initialized cluster: {cluster_id}")
+        
+        logger.info(f"Initialized {len(all_styles)} style clusters. Total clusters: {len(self.cluster_manager.clusters)}")
