@@ -73,7 +73,7 @@ const ClusterVisualization = memo(({ clusters, onNodeSelect }: ClusterVisualizat
           <circle
             cx={cluster.position_hint.x}
             cy={cluster.position_hint.y}
-            r={80}
+            r={110}
             fill={cluster.color || "hsl(189, 94%, 55%)"}
             opacity="0.1"
             pointerEvents="none"
@@ -82,7 +82,7 @@ const ClusterVisualization = memo(({ clusters, onNodeSelect }: ClusterVisualizat
           {/* Cluster label */}
           <text
             x={cluster.position_hint.x}
-            y={cluster.position_hint.y - 95}
+            y={cluster.position_hint.y - 135}
             fill="currentColor"
             fontSize="14"
             fontWeight="600"

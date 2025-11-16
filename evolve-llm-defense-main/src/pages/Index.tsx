@@ -112,45 +112,106 @@ const Index = () => {
         console.log(`[Index] Current cluster count before add: ${prev.length}`);
         const colorIndex = prev.length % CLUSTER_COLORS.length;
         
-        // Calculate random position with collision avoidance
-        const centerX = 900;
-        const centerY = 600;
-        const minDistance = 250; // Minimum distance between cluster centers
-        const maxAttempts = 50;
+        // Smart cluster positioning with space-finding algorithm
+        const minDistance = 350;
+        const minX = 300;
+        const maxX = 1300;
+        const minY = 200;
+        const maxY = 700;
         
-        let position = { x: 0, y: 0 };
-        let attempt = 0;
-        let validPosition = false;
+        // Generate candidate positions in a grid pattern with randomness
+        const findBestPosition = () => {
+          if (prev.length === 0) {
+            // First cluster goes in the center with slight randomness
+            return {
+              x: 800 + (Math.random() - 0.5) * 100,
+              y: 450 + (Math.random() - 0.5) * 100,
+            };
+          }
+          
+          // Create a grid of potential positions
+          const gridStep = minDistance * 0.8;
+          const candidates: Array<{ x: number; y: number; score: number }> = [];
+          
+          for (let x = minX; x <= maxX; x += gridStep) {
+            for (let y = minY; y <= maxY; y += gridStep) {
+              // Add randomness to grid position
+              const candidateX = x + (Math.random() - 0.5) * gridStep * 0.5;
+              const candidateY = y + (Math.random() - 0.5) * gridStep * 0.5;
+              
+              // Check if this position is valid (far enough from all clusters)
+              let minDistToCluster = Infinity;
+              let isValid = true;
+              
+              for (const cluster of prev) {
+                const dx = cluster.position_hint.x - candidateX;
+                const dy = cluster.position_hint.y - candidateY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < minDistance) {
+                  isValid = false;
+                  break;
+                }
+                
+                minDistToCluster = Math.min(minDistToCluster, dist);
+              }
+              
+              if (isValid) {
+                // Score based on distance from other clusters (prefer middle distances)
+                // and distance from edges
+                const edgeDistX = Math.min(candidateX - minX, maxX - candidateX);
+                const edgeDistY = Math.min(candidateY - minY, maxY - candidateY);
+                const edgeDist = Math.min(edgeDistX, edgeDistY);
+                
+                // Prefer positions that are well-spaced but not too far from center
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                const distFromCenter = Math.sqrt(
+                  Math.pow(candidateX - centerX, 2) + Math.pow(candidateY - centerY, 2)
+                );
+                
+                const score = minDistToCluster * 0.5 + edgeDist * 0.3 - distFromCenter * 0.2;
+                
+                candidates.push({ x: candidateX, y: candidateY, score });
+              }
+            }
+          }
+          
+          if (candidates.length === 0) {
+            // Fallback: find the position furthest from all clusters
+            let bestPos = { x: 800, y: 450 };
+            let maxMinDist = 0;
+            
+            for (let i = 0; i < 100; i++) {
+              const x = minX + Math.random() * (maxX - minX);
+              const y = minY + Math.random() * (maxY - minY);
+              
+              const minDist = Math.min(
+                ...prev.map(cluster => {
+                  const dx = cluster.position_hint.x - x;
+                  const dy = cluster.position_hint.y - y;
+                  return Math.sqrt(dx * dx + dy * dy);
+                })
+              );
+              
+              if (minDist > maxMinDist) {
+                maxMinDist = minDist;
+                bestPos = { x, y };
+              }
+            }
+            
+            return bestPos;
+          }
+          
+          // Sort by score and pick from top candidates with randomness
+          candidates.sort((a, b) => b.score - a.score);
+          const topCandidates = candidates.slice(0, Math.min(5, candidates.length));
+          const chosen = topCandidates[Math.floor(Math.random() * topCandidates.length)];
+          
+          return { x: chosen.x, y: chosen.y };
+        };
         
-        while (!validPosition && attempt < maxAttempts) {
-          const angle = Math.random() * Math.PI * 2;
-          const distance = 150 + Math.random() * 250;
-          
-          position = {
-            x: centerX + Math.cos(angle) * distance,
-            y: centerY + Math.sin(angle) * distance,
-          };
-          
-          // Check if position is too close to existing clusters
-          validPosition = prev.every(cluster => {
-            const dx = cluster.position_hint.x - position.x;
-            const dy = cluster.position_hint.y - position.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            return dist >= minDistance;
-          });
-          
-          attempt++;
-        }
-        
-        // If we couldn't find a valid position, expand the search radius
-        if (!validPosition) {
-          const angle = Math.random() * Math.PI * 2;
-          const distance = 400 + Math.random() * 300;
-          position = {
-            x: centerX + Math.cos(angle) * distance,
-            y: centerY + Math.sin(angle) * distance,
-          };
-        }
+        const position = findBestPosition();
 
         const newCluster: ClusterData = {
           cluster_id: payload.cluster_id,
