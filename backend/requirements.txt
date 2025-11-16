@@ -33,3 +33,6 @@ python-json-logger
 
 # Together AI SDK
 together
+
+# Valyu DeepSearch SDK
+valyu
