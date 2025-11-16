@@ -180,37 +180,37 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
   return (
     <div className="w-[500px] glass border-l border-border/50 flex flex-col animate-in slide-in-from-right duration-500">
       {/* Header */}
-      <div className="p-6 border-b border-border/50 bg-gradient-to-r from-accent/5 via-primary/5 to-accent/5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-accent/10 border border-accent/20">
-              <BookOpen className="w-6 h-6 text-accent" />
+      <div className="p-4 border-b border-border/50 bg-gradient-to-r from-accent/5 via-primary/5 to-accent/5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-accent/10 border border-accent/20">
+              <BookOpen className="w-4 h-4 text-accent" />
             </div>
             <div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+              <h2 className="text-base font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
                 Jailbreak Library
               </h2>
               <p className="text-xs text-muted-foreground">
-                Research-backed attack techniques
+                Research-backed techniques
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button
               size="sm"
               onClick={discoverNewJailbreaks}
               disabled={discovering}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground"
+              className="bg-accent hover:bg-accent/90 text-accent-foreground text-xs h-7 px-2"
             >
               {discovering ? (
                 <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  <RefreshCw className="w-3 h-3 mr-1.5 animate-spin" />
                   Discovering...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Discover New
+                  <Sparkles className="w-3 h-3 mr-1.5" />
+                  Discover
                 </>
               )}
             </Button>
@@ -218,38 +218,38 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
               size="sm"
               onClick={() => setShowAddDialog(true)}
               variant="outline"
-              className="glass"
+              className="glass text-xs h-7 px-2"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Custom
+              <Plus className="w-3 h-3 mr-1.5" />
+              Add
             </Button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="relative mb-2.5">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search jailbreak techniques..."
+            placeholder="Search techniques..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 glass border-border/50 focus:border-accent/50"
+            className="pl-8 h-8 text-sm glass border-border/50 focus:border-accent/50"
           />
         </div>
 
         {/* Category Filters */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1">
           {categories.map((category) => (
             <Badge
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
-              className={`cursor-pointer glass text-xs px-2 py-0.5 ${
+              className={`cursor-pointer glass text-[10px] px-1.5 py-0 h-5 ${
                 selectedCategory === category ? getCategoryColor(category) : ""
               }`}
               onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
@@ -262,7 +262,7 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1 p-6">
+      <ScrollArea className="flex-1 p-4">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center gap-4">
@@ -284,21 +284,21 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {filteredFindings.map((finding, idx) => (
               <Card
                 key={idx}
-                className="glass p-4 border-border/50 hover:border-accent/50 transition-all group cursor-pointer"
+                className="glass p-3 border-border/50 hover:border-accent/50 transition-all group cursor-pointer"
                 onClick={() => setSelectedJailbreak(finding)}
               >
-                <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
                   <h3 className="font-medium text-sm leading-tight group-hover:text-accent transition-colors">
                     {finding.title}
                   </h3>
                   <div className="flex-shrink-0 flex items-center gap-1">
                     <Badge
                       variant="outline"
-                      className={`text-xs ${getCategoryColor(finding.query_category)}`}
+                      className={`text-[10px] px-1.5 py-0 h-4 ${getCategoryColor(finding.query_category)}`}
                     >
                       {finding.query_category.replace(/_/g, " ")}
                     </Badge>
@@ -307,7 +307,8 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
                         href={finding.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1 hover:bg-accent/10 rounded transition-colors"
+                        className="p-0.5 hover:bg-accent/10 rounded transition-colors"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <ExternalLink className="w-3 h-3 text-accent" />
                       </a>
@@ -315,15 +316,15 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
                   </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-3">
+                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                   {finding.content}
                 </p>
 
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between text-[10px]">
+                  <div className="flex items-center gap-1.5">
                     {finding.relevance_score && (
-                      <Badge variant="outline" className="glass text-xs">
-                        {(finding.relevance_score * 100).toFixed(0)}% relevant
+                      <Badge variant="outline" className="glass text-[10px] px-1.5 py-0 h-4">
+                        {(finding.relevance_score * 100).toFixed(0)}%
                       </Badge>
                     )}
                     {finding.authors && finding.authors.length > 0 && (

@@ -401,7 +401,7 @@ const Index = () => {
           </div>
 
           {/* Center Analysis Tools */}
-          <div className="flex gap-3">
+          <div className="flex gap-2.5">
             <button
               onClick={() => {
                 setShowAgentProfile(!showAgentProfile);
@@ -410,7 +410,7 @@ const Index = () => {
                 setShowJailbreaks(false);
               }}
               disabled={!attackId || isRunning}
-              className={`group relative px-6 py-3 rounded-xl font-semibold text-base transition-all duration-500 overflow-hidden ${
+              className={`group relative px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-500 overflow-hidden ${
                 !attackId || isRunning ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95"
               }`}
             >
@@ -422,13 +422,13 @@ const Index = () => {
               }`}></div>
 
               {/* Glass layer */}
-              <div className="absolute inset-0 glass-intense border border-primary/30 rounded-xl"></div>
+              <div className="absolute inset-0 glass-intense border border-primary/30 rounded-lg"></div>
 
               {/* Glow effect */}
-              <div className={`absolute inset-0 rounded-xl transition-all duration-500 ${
+              <div className={`absolute inset-0 rounded-lg transition-all duration-500 ${
                 showAgentProfile
-                  ? "shadow-[0_0_30px_rgba(139,92,246,0.5)] border border-primary/60"
-                  : "group-hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+                  ? "shadow-[0_0_25px_rgba(139,92,246,0.4)] border border-primary/60"
+                  : "group-hover:shadow-[0_0_15px_rgba(139,92,246,0.3)]"
               }`}></div>
 
               {/* Shimmer effect on hover */}
@@ -436,8 +436,8 @@ const Index = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               </div>
 
-              <span className="relative z-10 flex items-center gap-2">
-                <span className="text-xl">🔬</span>
+              <span className="relative z-10 flex items-center gap-1.5">
+                <span className="text-base">🔬</span>
                 <span>Agent Glass Box</span>
               </span>
             </button>
@@ -449,7 +449,7 @@ const Index = () => {
                 setSelectedNode(null);
                 setShowJailbreaks(false);
               }}
-              className="group relative px-6 py-3 rounded-xl font-semibold text-base transition-all duration-500 overflow-hidden hover:scale-105 active:scale-95"
+              className="group relative px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-500 overflow-hidden hover:scale-105 active:scale-95"
             >
               {/* Animated gradient background */}
               <div className={`absolute inset-0 bg-gradient-to-br from-accent/30 via-blue-500/20 to-accent/30 backdrop-blur-xl transition-all duration-500 ${
@@ -459,13 +459,13 @@ const Index = () => {
               }`}></div>
 
               {/* Glass layer */}
-              <div className="absolute inset-0 glass-intense border border-accent/30 rounded-xl"></div>
+              <div className="absolute inset-0 glass-intense border border-accent/30 rounded-lg"></div>
 
               {/* Glow effect */}
-              <div className={`absolute inset-0 rounded-xl transition-all duration-500 ${
+              <div className={`absolute inset-0 rounded-lg transition-all duration-500 ${
                 showResults
-                  ? "shadow-[0_0_30px_rgba(59,130,246,0.5)] border border-accent/60"
-                  : "group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                  ? "shadow-[0_0_25px_rgba(59,130,246,0.4)] border border-accent/60"
+                  : "group-hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
               }`}></div>
 
               {/* Shimmer effect on hover */}
@@ -473,8 +473,8 @@ const Index = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               </div>
 
-              <span className="relative z-10 flex items-center gap-2">
-                <span className="text-xl">📊</span>
+              <span className="relative z-10 flex items-center gap-1.5">
+                <span className="text-base">📊</span>
                 <span>{showResults ? "Hide" : "View"} Results</span>
               </span>
             </button>
