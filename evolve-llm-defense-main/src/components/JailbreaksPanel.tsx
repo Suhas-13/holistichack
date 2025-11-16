@@ -11,7 +11,7 @@ import {
   Zap,
   Search,
   ExternalLink,
-  BookOpen,
+  ShieldAlert,
   Sparkles,
   RefreshCw,
   X,
@@ -184,7 +184,7 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-accent/10 border border-accent/20">
-              <BookOpen className="w-4 h-4 text-accent" />
+              <ShieldAlert className="w-4 h-4 text-accent" />
             </div>
             <div>
               <h2 className="text-base font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
