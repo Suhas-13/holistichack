@@ -94,7 +94,7 @@ class ConnectionManager:
         )
         await self.broadcast_event(attack_id, event)
 
-    async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str, assigned_goal=None, generation: int = 0):
+    async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str, assigned_goal=None, generation: int = 0, metadata: dict = None):
         """Convenience method for node_add events"""
         data = {
             "node_id": node_id,
@@ -112,6 +112,9 @@ class ConnectionManager:
                 data["assigned_goal"] = assigned_goal.dict()
             else:
                 data["assigned_goal"] = assigned_goal
+        
+        if metadata:
+            data["metadata"] = metadata
 
         event = WebSocketEvent(
             type="node_add",
