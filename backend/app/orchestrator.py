@@ -744,7 +744,8 @@ class AttackOrchestrator:
                         "pattern_type": b.pattern_type,
                         "confidence": b.confidence,
                         "exploitability": b.exploitability,
-                        "implications": b.implications
+                        "implications": b.implications,
+                        "representative_trace_ids": b.representative_trace_ids
                     }
                     for b in agent_profile.behavior_patterns
                 ],
@@ -759,7 +760,8 @@ class AttackOrchestrator:
                         "success_rate": f.success_rate,
                         "severity": f.severity,
                         "common_triggers": f.common_triggers,
-                        "mitigation_suggestions": f.mitigation_suggestions
+                        "mitigation_suggestions": f.mitigation_suggestions,
+                        "representative_trace_ids": f.representative_trace_ids
                     }
                     for f in agent_profile.failure_modes
                 ],

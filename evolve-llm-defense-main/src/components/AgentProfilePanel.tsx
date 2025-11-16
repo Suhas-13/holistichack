@@ -51,6 +51,7 @@ interface AgentProfile {
     confidence: number;
     exploitability: number;
     implications: string;
+    representative_trace_ids?: string[];
   }>;
   dominant_behaviors: string[];
 
@@ -63,6 +64,7 @@ interface AgentProfile {
     severity: string;
     common_triggers: string[];
     mitigation_suggestions: string[];
+    representative_trace_ids?: string[];
   }>;
   critical_vulnerabilities: string[];
 
