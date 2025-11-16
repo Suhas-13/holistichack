@@ -64,7 +64,7 @@ class AttackOrchestrator:
         attack_goals: List[str],
         structured_goals: Optional[List] = None,
         seed_attack_count: int = 20,
-        max_evolution_steps: int = 100
+        max_evolution_steps: int = 50
     ):
         """
         Main orchestration method - runs the complete attack flow.
@@ -268,7 +268,7 @@ class AttackOrchestrator:
         }
         return mapping.get(category, AttackStyle.HYPOTHETICALS)
 
-    async def _evolve_attacks(self, session: AttackSessionState, max_steps: int = 100):
+    async def _evolve_attacks(self, session: AttackSessionState, max_steps: int = 50):
         """
         Phase 4: Evolve attacks through mutations.
 

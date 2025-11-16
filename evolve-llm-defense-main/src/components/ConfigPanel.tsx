@@ -46,7 +46,7 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
   const [modelProvider, setModelProvider] = useState<"holistic" | "custom">("custom");
   const [holisticAgent, setHolisticAgent] = useState("bear");
   const [customModel, setCustomModel] = useState("http://localhost:5002/api/insurance");
-  const [maxEvolutionSteps, setMaxEvolutionSteps] = useState(100);
+  const [maxEvolutionSteps, setMaxEvolutionSteps] = useState(50);
 
   // Holistic AI agents
   const holisticAgents = [
@@ -61,7 +61,7 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
 
   // Custom OpenRouter models
   const customModels = [
-    { value: "http://localhost:5002/api/insurance", label: "🏢 Insurance Agent (Demo)" },
+    { value: "http://localhost:5002/api/insurance", label: "🏢 Insurance Agent" },
     { value: "x-ai/grok-4-fast", label: "Grok 4 Fast" },
     { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
     { value: "anthropic/claude-sonnet-4.5", label: "Claude Sonnet 4.5" },
@@ -298,7 +298,7 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
             id="maxEvolutionSteps"
             type="number"
             value={maxEvolutionSteps}
-            onChange={(e) => setMaxEvolutionSteps(parseInt(e.target.value) || 100)}
+            onChange={(e) => setMaxEvolutionSteps(parseInt(e.target.value) || 50)}
             min={10}
             max={1000}
             className="glass border-border/50 focus:border-primary/50 transition-colors"
