@@ -90,6 +90,7 @@ export interface NodeAddPayload {
   parent_ids: string[];
   attack_type: string;
   status: string;
+  metadata?: Record<string, any>;
   assigned_goal?: StructuredAttackGoal | null;
   generation?: number;
 }

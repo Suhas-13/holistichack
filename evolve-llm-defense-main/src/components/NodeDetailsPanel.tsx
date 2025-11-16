@@ -124,6 +124,58 @@ const NodeDetailsPanel = memo(({ node, allClusters = [], onClose, onNodeSelect }
             )}
           </div>
 
+          {/* Evolution History */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <GitBranch className="w-4 h-4 text-primary" />
+              Evolution History
+            </h3>
+            
+            {/* Parent History */}
+            {node.generation === 0 ? (
+              <div className="glass p-3 rounded-lg">
+                <div className="text-xs text-muted-foreground">This is a seed node (Generation 1)</div>
+              </div>
+            ) : node.metadata?.parent_history && node.metadata.parent_history.length > 0 ? (
+              <div className="glass p-3 rounded-lg">
+                <div className="text-xs font-medium text-foreground mb-2">Parent Nodes:</div>
+                <div className="flex flex-wrap gap-1">
+                  {node.metadata.parent_history.map((parentId: string, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {parentId}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="glass p-3 rounded-lg">
+                <div className="text-xs text-muted-foreground">No parent history available</div>
+              </div>
+            )}
+
+            {/* Mutation History */}
+            {node.generation > 0 && (
+              node.metadata?.mutation_history && node.metadata.mutation_history.length > 0 ? (
+                <div className="glass p-3 rounded-lg">
+                  <div className="text-xs font-medium text-foreground mb-2">
+                    Mutations Applied ({node.metadata.mutation_history.length}):
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {node.metadata.mutation_history.map((mutation: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs bg-accent/10">
+                        {index + 1}. {mutation}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="glass p-3 rounded-lg">
+                  <div className="text-xs text-muted-foreground">No mutation history available</div>
+                </div>
+              )
+            )}
+          </div>
+
           {/* Mutation Tree */}
           {mutationChain.length > 1 && (
             <div className="space-y-3">

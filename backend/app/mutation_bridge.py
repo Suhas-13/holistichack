@@ -169,6 +169,13 @@ class MutationSystemBridge:
                 risk_category=risk_category,
                 generation=0
             )
+            
+            # Initialize metadata with empty history for seed nodes
+            mutation_node.metadata = {
+                'mutation_history': [],
+                'parent_history': [],
+                'is_seed': True
+            }
 
             # Get assigned goal for this node
             assigned_goal = self._get_assigned_goal(index)
@@ -188,8 +195,9 @@ class MutationSystemBridge:
                 parent_ids=backend_node.parent_ids,
                 attack_type=backend_node.attack_type,
                 status="running",
-                assigned_goal=assigned_goal,
-                generation=backend_node.generation
+                generation=backend_node.generation,
+                metadata=backend_node.metadata,
+                assigned_goal=assigned_goal
             )
 
             # Small delay to ensure frontend processes node_add before execution
@@ -328,11 +336,23 @@ class MutationSystemBridge:
 
             # Add mutation history metadata
             mutation_node.metadata = mutation_node.metadata or {}
+            
+            # Get mutation and parent history from parent
+            parent_mutation_history = parent.metadata.get('mutation_history', []) if parent.metadata else []
+            parent_node_history = parent.metadata.get('parent_history', []) if parent.metadata else []
+            
+            # Add current mutation to history
+            current_mutation_history = parent_mutation_history + [mutation_style.value]
+            current_parent_history = parent_node_history + [parent.node_id]
+            
             mutation_node.metadata.update({
                 'mutation_style': mutation_style.value,
                 'parent_style': parent.attack_style if parent.attack_style else 'Unknown',
                 'mutation_generation': new_generation,
-                'parent_fitness': parent.fitness_score
+                'parent_fitness': parent.fitness_score,
+                'mutation_history': current_mutation_history,
+                'parent_history': current_parent_history,
+                'is_seed': False
             })
 
             # Convert to backend node (inherit goal from parent)
@@ -348,8 +368,9 @@ class MutationSystemBridge:
                 parent_ids=backend_node.parent_ids,
                 attack_type=backend_node.attack_type,
                 status="running",
-                assigned_goal=parent_goal,
-                generation=backend_node.generation
+                generation=backend_node.generation,
+                metadata=backend_node.metadata,
+                assigned_goal=parent_goal
             )
             
             # Small delay to ensure frontend processes node_add before execution

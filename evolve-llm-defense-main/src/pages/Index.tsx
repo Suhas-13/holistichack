@@ -265,8 +265,8 @@ const Index = () => {
         success: false,
         fitness_score: 0,
         llama_guard_score: 0,
-        generation: (payload as any).generation || 0, // Use generation from payload
-        metadata: {},
+        generation: payload.generation || 0,
+        metadata: payload.metadata || {},
         created_at: new Date().toISOString(),
         cost_usd: 0,
         latency_ms: 0,
@@ -368,6 +368,8 @@ const Index = () => {
             success: payload.status === "success",
             completed_at: new Date().toISOString(),
             generation: payload.generation !== undefined ? payload.generation : existingNode.generation,
+            // Preserve existing metadata and merge with any new metadata
+            metadata: { ...existingNode.metadata, ...(payload as any).metadata },
             // Add the raw judge score for color determination
             judgeScore: judgeScore,
           });
