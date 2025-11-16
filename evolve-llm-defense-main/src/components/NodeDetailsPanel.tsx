@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { AttackNode } from "@/types/evolution";
-import { X, Clock, Hash, MessageSquare, Brain } from "lucide-react";
+import { X, Clock, Hash, MessageSquare, Brain, Target, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { Badge } from "./ui/badge";
@@ -111,21 +111,61 @@ const NodeDetailsPanel = memo(({ node, onClose }: NodeDetailsPanelProps) => {
             </div>
           </div>
 
-          {/* Transcript */}
+          {/* Transcript - Chat Bubble UI */}
           {node.full_transcript.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-foreground">Full Transcript</h3>
-              <div className="space-y-2">
-                {node.full_transcript.map((turn, idx) => (
-                  <div key={idx} className="glass p-4 rounded-lg">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {turn.role === "attacker" ? "Attacker" : "Model"}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                Conversation ({node.full_transcript.length} turns)
+              </h3>
+              <div className="space-y-3">
+                {node.full_transcript.map((turn, idx) => {
+                  const isAttacker = turn.role === "attacker";
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex ${isAttacker ? "justify-end" : "justify-start"}`}
+                    >
+                      <div className={`flex gap-3 max-w-[85%] ${isAttacker ? "flex-row-reverse" : "flex-row"}`}>
+                        {/* Avatar */}
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                          isAttacker
+                            ? "bg-red-500/10 border border-red-500/30"
+                            : "bg-green-500/10 border border-green-500/30"
+                        }`}>
+                          {isAttacker ? (
+                            <Target className="w-4 h-4 text-red-500" />
+                          ) : (
+                            <Shield className="w-4 h-4 text-green-500" />
+                          )}
+                        </div>
+
+                        {/* Message Bubble */}
+                        <div className={`flex flex-col ${isAttacker ? "items-end" : "items-start"}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-xs font-medium ${
+                              isAttacker ? "text-red-500" : "text-green-500"
+                            }`}>
+                              {isAttacker ? "Attacker" : "Agent"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Turn {idx + 1}
+                            </span>
+                          </div>
+                          <div className={`rounded-2xl px-4 py-3 ${
+                            isAttacker
+                              ? "bg-red-500/10 border border-red-500/20 rounded-tr-sm"
+                              : "bg-green-500/10 border border-green-500/20 rounded-tl-sm"
+                          }`}>
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                              {turn.content}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-foreground whitespace-pre-wrap">
-                      {turn.content}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

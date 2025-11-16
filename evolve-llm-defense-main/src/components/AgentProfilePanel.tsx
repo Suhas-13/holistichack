@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import {
   Brain,
   Shield,
@@ -17,8 +19,11 @@ import {
   MessageSquare,
   Wrench,
   Download,
+  Link,
+  X,
 } from "lucide-react";
 import { ApiService } from "@/services/api";
+import type { AttackNode } from "@/types/evolution";
 
 interface AgentProfile {
   target_endpoint: string;
@@ -103,6 +108,9 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
   const [profile, setProfile] = useState<AgentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTrace, setSelectedTrace] = useState<AttackNode | null>(null);
+  const [showTraceModal, setShowTraceModal] = useState(false);
+  const [allNodes, setAllNodes] = useState<AttackNode[]>([]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -121,6 +129,11 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
         } else {
           setError("Profile data not yet available. The attack may still be processing.");
         }
+
+        // Store all attack nodes for trace lookup
+        if (response.session?.attack_tree) {
+          setAllNodes(response.session.attack_tree);
+        }
       } catch (error) {
         console.error("Failed to load agent profile:", error);
         setError(error instanceof Error ? error.message : "Failed to load agent profile");
@@ -131,6 +144,20 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
 
     loadProfile();
   }, [attackId]);
+
+  const handleTraceClick = async (traceId: string) => {
+    // Find the attack node in our stored nodes
+    const node = allNodes.find(n => n.node_id === traceId);
+
+    if (node) {
+      setSelectedTrace(node);
+      setShowTraceModal(true);
+    } else {
+      toast.error("Trace not found", {
+        description: `Could not find attack trace ${traceId.slice(0, 8)}...`
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -571,6 +598,28 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
                 <div className="pt-3 border-t border-border/50">
                   <p className="text-xs text-muted-foreground italic">{behavior.implications}</p>
                 </div>
+
+                {behavior.representative_trace_ids && behavior.representative_trace_ids.length > 0 && (
+                  <div className="pt-3 border-t border-border/50">
+                    <p className="text-xs font-medium mb-2 flex items-center gap-2 text-muted-foreground">
+                      <Link className="w-3 h-3" />
+                      Example Attack Traces:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {behavior.representative_trace_ids.map((traceId) => (
+                        <button
+                          key={traceId}
+                          onClick={() => handleTraceClick(traceId)}
+                          className="text-xs px-2 py-1 rounded glass border border-primary/30
+                                   hover:bg-primary/10 transition-colors cursor-pointer
+                                   text-primary font-mono"
+                        >
+                          {traceId.slice(0, 8)}...
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </Card>
             ))}
           </TabsContent>
@@ -630,6 +679,28 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
                           <div className="w-1 h-1 rounded-full bg-current mt-2" />
                           <p className="text-xs text-muted-foreground flex-1">{suggestion}</p>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {failure.representative_trace_ids && failure.representative_trace_ids.length > 0 && (
+                  <div className="pt-3 border-t border-border/50">
+                    <p className="text-xs font-medium mb-2 flex items-center gap-2 text-muted-foreground">
+                      <Link className="w-3 h-3" />
+                      Example Attack Traces:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {failure.representative_trace_ids.map((traceId) => (
+                        <button
+                          key={traceId}
+                          onClick={() => handleTraceClick(traceId)}
+                          className="text-xs px-2 py-1 rounded glass border border-red-500/30
+                                   hover:bg-red-500/10 transition-colors cursor-pointer
+                                   text-red-500 font-mono"
+                        >
+                          {traceId.slice(0, 8)}...
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -695,6 +766,110 @@ const AgentProfilePanel = ({ attackId, onClose }: AgentProfilePanelProps) => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Trace Detail Modal */}
+      <Dialog open={showTraceModal} onOpenChange={setShowTraceModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto glass">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              Attack Trace Details
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTrace && (
+                <div className="flex items-center gap-2 flex-wrap mt-2">
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {selectedTrace.node_id.slice(0, 12)}...
+                  </Badge>
+                  <Badge variant="outline" className={selectedTrace.success ? "border-green-500/50 text-green-500" : "border-red-500/50 text-red-500"}>
+                    {selectedTrace.success ? "Success" : "Failure"}
+                  </Badge>
+                  <Badge variant="outline" className="border-primary/50 text-primary">
+                    {selectedTrace.attack_type}
+                  </Badge>
+                  <Badge variant="outline">
+                    Score: {selectedTrace.fitness_score.toFixed(2)}
+                  </Badge>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedTrace && (
+            <div className="space-y-4 mt-4">
+              {/* Initial Prompt */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full glass flex items-center justify-center border border-primary/30">
+                    <Target className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Attack Prompt</p>
+                    <p className="text-xs text-muted-foreground">Initial payload sent to agent</p>
+                  </div>
+                </div>
+                <div className="ml-10 p-4 rounded-lg glass border border-border/50 bg-primary/5">
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{selectedTrace.initial_prompt}</p>
+                </div>
+              </div>
+
+              {/* Response */}
+              {selectedTrace.response && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full glass flex items-center justify-center border ${
+                      selectedTrace.success ? "border-red-500/30 bg-red-500/10" : "border-green-500/30 bg-green-500/10"
+                    }`}>
+                      {selectedTrace.success ? (
+                        <Unlock className="w-4 h-4 text-red-500" />
+                      ) : (
+                        <Lock className="w-4 h-4 text-green-500" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Agent Response</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedTrace.success ? "Attack succeeded" : "Attack blocked"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`ml-10 p-4 rounded-lg glass border ${
+                    selectedTrace.success ? "border-red-500/30 bg-red-500/5" : "border-green-500/30 bg-green-500/5"
+                  }`}>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{selectedTrace.response}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Metadata */}
+              <div className="ml-10 p-4 rounded-lg glass border border-border/50 bg-accent/5">
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <p className="text-muted-foreground mb-1">Depth</p>
+                    <p className="font-medium">{selectedTrace.depth}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Fitness Score</p>
+                    <p className="font-medium">{selectedTrace.fitness_score.toFixed(4)}</p>
+                  </div>
+                  {selectedTrace.parent_id && (
+                    <div>
+                      <p className="text-muted-foreground mb-1">Parent Node</p>
+                      <p className="font-mono text-xs">{selectedTrace.parent_id.slice(0, 12)}...</p>
+                    </div>
+                  )}
+                  {selectedTrace.cluster_id !== undefined && (
+                    <div>
+                      <p className="text-muted-foreground mb-1">Cluster ID</p>
+                      <p className="font-medium">Cluster {selectedTrace.cluster_id}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
