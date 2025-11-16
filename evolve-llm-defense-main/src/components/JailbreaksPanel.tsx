@@ -45,6 +45,7 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedJailbreak, setSelectedJailbreak] = useState<JailbreakFinding | null>(null);
   const [newJailbreak, setNewJailbreak] = useState({
     title: "",
     content: "",
@@ -243,22 +244,15 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
         </div>
 
         {/* Category Filters */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Badge
-            variant={selectedCategory === null ? "default" : "outline"}
-            className="cursor-pointer glass"
-            onClick={() => setSelectedCategory(null)}
-          >
-            All ({findings.length})
-          </Badge>
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {categories.map((category) => (
             <Badge
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
-              className={`cursor-pointer glass ${
+              className={`cursor-pointer glass text-xs px-2 py-0.5 ${
                 selectedCategory === category ? getCategoryColor(category) : ""
               }`}
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
             >
               {category.replace(/_/g, " ")} (
               {findings.filter((f) => f.query_category === category).length})
@@ -294,7 +288,8 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
             {filteredFindings.map((finding, idx) => (
               <Card
                 key={idx}
-                className="glass p-4 border-border/50 hover:border-accent/50 transition-all group"
+                className="glass p-4 border-border/50 hover:border-accent/50 transition-all group cursor-pointer"
+                onClick={() => setSelectedJailbreak(finding)}
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <h3 className="font-medium text-sm leading-tight group-hover:text-accent transition-colors">
@@ -414,6 +409,94 @@ const JailbreaksPanel = ({ onClose }: JailbreaksPanelProps) => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Jailbreak Detail Dialog */}
+      <Dialog open={!!selectedJailbreak} onOpenChange={(open) => !open && setSelectedJailbreak(null)}>
+        <DialogContent className="max-w-3xl glass">
+          {selectedJailbreak && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between gap-3 pr-8">
+                  <span className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-accent" />
+                    {selectedJailbreak.title}
+                  </span>
+                  {selectedJailbreak.url && (
+                    <a
+                      href={selectedJailbreak.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 hover:bg-accent/10 rounded-lg transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="w-4 h-4 text-accent" />
+                    </a>
+                  )}
+                </DialogTitle>
+                <DialogDescription className="flex items-center gap-2 flex-wrap">
+                  <Badge
+                    variant="outline"
+                    className={`text-xs ${getCategoryColor(selectedJailbreak.query_category)}`}
+                  >
+                    {selectedJailbreak.query_category.replace(/_/g, " ")}
+                  </Badge>
+                  {selectedJailbreak.relevance_score && (
+                    <Badge variant="outline" className="glass text-xs">
+                      {(selectedJailbreak.relevance_score * 100).toFixed(0)}% relevant
+                    </Badge>
+                  )}
+                  {selectedJailbreak.publication_date && (
+                    <span className="text-xs text-muted-foreground">
+                      Published: {new Date(selectedJailbreak.publication_date).toLocaleDateString()}
+                    </span>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 mt-4">
+                {/* Content */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Description</Label>
+                  <div className="glass p-4 rounded-lg border border-border/50">
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                      {selectedJailbreak.content}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Metadata */}
+                {selectedJailbreak.authors && selectedJailbreak.authors.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Authors</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedJailbreak.authors.map((author, idx) => (
+                        <Badge key={idx} variant="secondary" className="glass text-xs">
+                          {author}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedJailbreak.citation_string && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Citation</Label>
+                    <div className="glass p-3 rounded-lg border border-border/50">
+                      <code className="text-xs text-muted-foreground font-mono">
+                        {selectedJailbreak.citation_string}
+                      </code>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 text-xs text-muted-foreground">
+                  Added: {new Date(selectedJailbreak.timestamp).toLocaleString()}
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
