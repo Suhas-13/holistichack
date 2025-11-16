@@ -12,10 +12,11 @@ import {
   NodeUpdatePayload,
   ClusterAddPayload,
   AttackCompletePayload,
+  StructuredAttackGoal,
 } from "@/types/evolution";
 import { ApiService, WebSocketService } from "@/services/api";
 import { toast } from "sonner";
-import { Eye, BarChart3 } from "lucide-react";
+import { Eye, BarChart3, ShieldAlert } from "lucide-react";
 
 const CLUSTER_COLORS = [
   "hsl(189, 94%, 55%)",
@@ -35,6 +36,7 @@ const Index = () => {
   const [nodes, setNodes] = useState<Map<string, AttackNode>>(new Map());
   const [isRunning, setIsRunning] = useState(false);
   const [attackId, setAttackId] = useState<string | null>(null);
+  const [activeGoals, setActiveGoals] = useState<StructuredAttackGoal[]>([]);
   
   const apiService = useRef(ApiService.getInstance());
   const wsService = useRef<WebSocketService | null>(null);
@@ -51,19 +53,29 @@ const Index = () => {
   const startEvolution = async (config: {
     targetEndpoint: string;
     attackGoals: string[];
+    structured_goals?: StructuredAttackGoal[];
     seedAttackCount: number;
+    maxEvolutionSteps?: number;
   }) => {
     try {
+      console.log("[Index] Starting evolution with config:", config);
+      console.log("[Index] Structured goals:", config.structured_goals);
+
       setIsRunning(true);
       setClusters([]);
       setNodes(new Map());
+      setActiveGoals(config.structured_goals || []);
+
+      console.log("[Index] Active goals set to:", config.structured_goals || []);
 
       toast.loading("Starting evolution...");
 
       const response = await apiService.current.startAttack({
         targetEndpoint: config.targetEndpoint,
         attackGoals: config.attackGoals,
+        structured_goals: config.structured_goals,
         seedAttackCount: config.seedAttackCount,
+        maxEvolutionSteps: config.maxEvolutionSteps,
       });
 
       setAttackId(response.attack_id);
@@ -242,6 +254,7 @@ const Index = () => {
         parent_ids: payload.parent_ids,
         attack_type: payload.attack_type,
         status: payload.status as "pending" | "running" | "success" | "failure" | "error",
+        assigned_goal: payload.assigned_goal || null,
         initial_prompt: "",
         response: null,
         num_turns: 1,
@@ -276,22 +289,24 @@ const Index = () => {
           return prev;
         }
 
-        const existingNodes = cluster.node_ids
-          .map((id) => nodes.get(id))
-          .filter((n): n is AttackNode => n !== undefined);
-
         let position;
-        
-        if (payload.parent_ids.length > 0 && existingNodes.length > 0) {
-          const parent = existingNodes.find((n) => payload.parent_ids.includes(n.node_id));
+
+        // Search for parent across ALL clusters (for cross-cluster evolution)
+        if (payload.parent_ids.length > 0) {
+          const allNodes = Array.from(nodes.values());
+          const parent = allNodes.find((n) => payload.parent_ids.includes(n.node_id));
+
           if (parent && parent.position) {
+            // Position near parent (even if parent is in different cluster)
             const angle = Math.random() * Math.PI * 2;
             const distance = 40 + Math.random() * 20;
             position = {
               x: parent.position.x + Math.cos(angle) * distance,
               y: parent.position.y + Math.sin(angle) * distance,
             };
+            console.log(`[Index] Cross-cluster evolution: positioning node near parent in different cluster`);
           } else {
+            // Parent not found or has no position, use cluster center
             const angle = Math.random() * Math.PI * 2;
             const radius = 30 + Math.random() * 50;
             position = {
@@ -300,6 +315,7 @@ const Index = () => {
             };
           }
         } else {
+          // No parent (seed node), position around cluster center
           const angle = Math.random() * Math.PI * 2;
           const radius = 30 + Math.random() * 50;
           position = {
@@ -348,6 +364,7 @@ const Index = () => {
             response: payload.response !== undefined ? payload.response : existingNode.response,
             full_transcript: payload.full_transcript,
             full_trace: payload.full_trace,
+            assigned_goal: payload.assigned_goal || existingNode.assigned_goal,
             success: payload.status === "success",
             completed_at: new Date().toISOString(),
             generation: payload.generation !== undefined ? payload.generation : existingNode.generation,
@@ -428,6 +445,7 @@ const Index = () => {
       wsService.current = null;
     }
     setIsRunning(false);
+    setActiveGoals([]);
     toast.info("Evolution stopped");
   };
 
@@ -451,6 +469,15 @@ const Index = () => {
         nodes: clusterNodes,
       };
     });
+  }, [clusters, nodes]);
+
+  const stats = useMemo(() => {
+    const totalNodes = clusters.reduce((sum, c) => sum + (c.node_ids?.length || 0), 0);
+    const allNodes = Array.from(nodes.values());
+    const successfulNodes = allNodes.filter(n => n.success).length;
+    const successRate = totalNodes > 0 ? ((successfulNodes / totalNodes) * 100).toFixed(1) : "0.0";
+
+    return { totalNodes, successRate, clusterCount: clusters.length };
   }, [clusters, nodes]);
 
   return (
@@ -548,13 +575,14 @@ const Index = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setShowJailbreaks(!showJailbreaks)}
-              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
+              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 flex items-center gap-2 ${
                 showJailbreaks
                   ? "bg-accent/20 border border-accent/50 shadow-lg shadow-accent/20"
                   : "hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/20"
               }`}
             >
-              📚 Jailbreaks
+              <ShieldAlert className="w-4 h-4" />
+              Jailbreaks
             </button>
           </div>
         </div>
@@ -592,6 +620,34 @@ const Index = () => {
             selectedNode={selectedNode}
             isRunning={isRunning}
           />
+
+          {/* Floating Stats Card - Bottom Right */}
+          {isRunning && (
+            <div className="absolute bottom-6 right-6 z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="glass-intense border border-primary/30 rounded-xl shadow-2xl shadow-primary/10 backdrop-blur-xl">
+                {/* Header */}
+                <div className="px-4 py-2.5 border-b border-border/30 bg-gradient-to-r from-primary/5 via-purple-500/5 to-primary/5">
+                  <h3 className="text-xs font-bold text-foreground">Evolution Stats</h3>
+                </div>
+
+                {/* Stats */}
+                <div className="p-3 space-y-2 min-w-[180px]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Total Nodes</span>
+                    <span className="text-sm font-bold text-foreground">{stats.totalNodes}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Active Clusters</span>
+                    <span className="text-sm font-bold text-foreground">{stats.clusterCount}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Success Rate</span>
+                    <span className="text-sm font-bold text-success">{stats.successRate}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Side Panel - Jailbreaks, Results, or Node Details */}

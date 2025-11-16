@@ -1,10 +1,11 @@
-import { AttackNode, ClusterData, WebSocketEventType } from "@/types/evolution";
+import { AttackNode, ClusterData, WebSocketEventType, StructuredAttackGoal } from "@/types/evolution";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export interface StartAttackConfig {
     targetEndpoint: string;
     attackGoals?: string[];
+    structured_goals?: StructuredAttackGoal[];
     seedAttackCount?: number;
     maxEvolutionSteps?: number;
 }
@@ -73,6 +74,24 @@ export class ApiService {
         return ApiService.instance;
     }
 
+    async parseGoals(goalsText: string): Promise<{ structured_goals: StructuredAttackGoal[] }> {
+        const response = await fetch(`${API_BASE_URL}/api/v1/parse-goals`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                goals_text: goalsText,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to parse goals: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
     async startAttack(config: StartAttackConfig): Promise<StartAttackResponse> {
         const response = await fetch(`${API_BASE_URL}/api/v1/start-attack`, {
             method: "POST",
@@ -82,6 +101,7 @@ export class ApiService {
             body: JSON.stringify({
                 target_endpoint: config.targetEndpoint,
                 attack_goals: config.attackGoals || [],
+                structured_goals: config.structured_goals || null,
                 seed_attack_count: config.seedAttackCount || 20,
                 max_evolution_steps: config.maxEvolutionSteps || 100,
             }),

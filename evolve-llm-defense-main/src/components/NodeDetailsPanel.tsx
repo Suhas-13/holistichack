@@ -81,6 +81,26 @@ const NodeDetailsPanel = memo(({ node, allClusters = [], onClose, onNodeSelect }
       {/* Content */}
       <ScrollArea className="flex-1 p-6">
         <div className="space-y-6">
+          {/* Assigned Goal */}
+          {node.assigned_goal && (
+            <div className="glass p-3 rounded-lg border border-primary/30 mb-6">
+              <div className="flex items-start gap-2">
+                <Target className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="text-xs font-semibold text-primary mb-1">
+                    Attack Goal
+                  </div>
+                  <div className="text-sm font-medium text-foreground mb-1">
+                    {node.assigned_goal.label}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {node.assigned_goal.description}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Metadata */}
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm">

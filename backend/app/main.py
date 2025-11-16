@@ -18,11 +18,12 @@ from uuid import uuid4
 import asyncio
 import logging
 from app.config import settings
-from app.models import StartAttackRequest, StartAttackResponse, AttackResults
+from app.models import StartAttackRequest, StartAttackResponse, AttackResults, StructuredAttackGoal
 from app.websocket_manager import manager as ws_manager
 from app.state_manager import state_manager
 from app.orchestrator import AttackOrchestrator
 from app.jailbreak_discovery_service import get_discovery_service
+from app.attack_goal_parser import get_goal_parser
 
 # Configure logging
 logging.basicConfig(
@@ -78,6 +79,35 @@ async def root():
     }
 
 
+@app.post("/api/v1/parse-goals", response_model=dict)
+async def parse_attack_goals(request: dict):
+    """
+    Parse unstructured attack goal text into structured goals with labels.
+
+    Request body:
+        { "goals_text": "Unstructured text describing attack goals..." }
+
+    Response:
+        { "structured_goals": [...] }
+    """
+    try:
+        goals_text = request.get("goals_text", "")
+        if not goals_text:
+            return {"structured_goals": []}
+
+        # Parse using LLM
+        parser = get_goal_parser()
+        structured_goals = await parser.parse_goals(goals_text)
+
+        # Convert to dict for response
+        return {
+            "structured_goals": [goal.model_dump() for goal in structured_goals]
+        }
+    except Exception as e:
+        logger.error(f"Error parsing goals: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/v1/start-attack", response_model=StartAttackResponse, status_code=202)
 async def start_attack(request: StartAttackRequest):
     """
@@ -102,6 +132,7 @@ async def start_attack(request: StartAttackRequest):
             attack_id=attack_id,
             target_endpoint=request.target_endpoint,
             attack_goals=request.attack_goals,
+            structured_goals=request.structured_goals,
             seed_attack_count=request.seed_attack_count,
             max_evolution_steps=request.max_evolution_steps
         )
