@@ -1,0 +1,21 @@
+# Jailbreak Seed Discovery System - Dependencies
+
+# Core dependencies
+python-dotenv>=1.0.0
+
+# Valyu API for web search and content extraction
+valyu>=2.2.0
+
+# LLM providers for synthesis
+together>=1.0.0
+openai>=1.0.0
+
+# HTTP and async
+requests>=2.31.0
+aiohttp>=3.9.0
+
+# Data processing
+pandas>=2.0.0
+
+# Existing mutation system dependencies
+boto3>=1.28.0  # AWS Bedrock

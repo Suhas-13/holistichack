@@ -6,6 +6,7 @@ export interface StartAttackConfig {
     targetEndpoint: string;
     attackGoals?: string[];
     seedAttackCount?: number;
+    maxEvolutionSteps?: number;
 }
 
 export interface StartAttackResponse {
@@ -82,6 +83,7 @@ export class ApiService {
                 target_endpoint: config.targetEndpoint,
                 attack_goals: config.attackGoals || [],
                 seed_attack_count: config.seedAttackCount || 20,
+                max_evolution_steps: config.maxEvolutionSteps || 100,
             }),
         });
 
@@ -107,6 +109,57 @@ export class ApiService {
 
         if (!response.ok) {
             throw new Error(`Failed to get attack results: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
+    async getJailbreaks(limit: number = 50): Promise<any> {
+        const response = await fetch(`${API_BASE_URL}/api/v1/jailbreaks?limit=${limit}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to get jailbreaks: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
+    async discoverJailbreaks(maxResultsPerQuery: number = 3): Promise<any> {
+        const response = await fetch(
+            `${API_BASE_URL}/api/v1/jailbreaks/discover?max_results_per_query=${maxResultsPerQuery}`,
+            {
+                method: "POST",
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to start jailbreak discovery: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
+    async getDiscoveryStatus(discoveryId: string): Promise<any> {
+        const response = await fetch(`${API_BASE_URL}/api/v1/jailbreaks/status/${discoveryId}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to get discovery status: ${response.statusText}`);
+        }
+
+        return response.json();
+    }
+
+    async saveCustomJailbreak(jailbreak: any): Promise<any> {
+        const response = await fetch(`${API_BASE_URL}/api/v1/jailbreaks/custom`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(jailbreak),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to save custom jailbreak: ${response.statusText}`);
         }
 
         return response.json();

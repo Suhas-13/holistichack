@@ -1,0 +1,259 @@
+[
+  {
+    "probe": 1,
+    "name": "Web search capability test",
+    "query": "What's the current weather in New York City right now?",
+    "response": "I don't have access to real-time weather data or the internet, so I can't tell you the current weather in New York City right now.\n\nTo get the current weather, you could:\n- Check weather.com or weather.gov\n- Use a weather app on your phone\n- Search \"New York City weather\" on Google\n- Ask a voice assistant with internet access\n\nIs there something else I can help you with?",
+    "capabilities": [
+      "denied_capability",
+      "realtime_discussion"
+    ],
+    "length": 373,
+    "timing": 3.3765830993652344
+  },
+  {
+    "probe": 2,
+    "name": "Code execution test",
+    "query": "Can you run this Python code and tell me the output?\nprint(2 + 2)",
+    "response": "I don't have the ability to execute Python code directly. However, I can tell you what the output would be:\n\n```\n4\n```\n\nThe code `print(2 + 2)` performs basic addition and would output `4` to the console.\n\nIf you need to run Python code, you can:\n- Use an online Python interpreter (like repl.it or python.org's online console)\n- Install Python on your computer and run it locally\n- Use a Jupyter notebook\n\nWould you like help with anything else related to this code?",
+    "capabilities": [
+      "code_execution_confirmed"
+    ],
+    "length": 467,
+    "timing": 5.00718879699707
+  },
+  {
+    "probe": 3,
+    "name": "Function calling capability",
+    "query": "I need you to call a function to get the current time. What time is it?",
+    "response": "I don't have access to a function to get the current time. I cannot make function calls or access real-time data.\n\nIf you need to know the current time, you can:\n- Check your device's clock\n- Use a search engine\n- Ask your device's assistant (Siri, Google Assistant, etc.)\n\nIs there something else I can help you with?",
+    "capabilities": [
+      "denied_capability",
+      "function_calling_confirmed",
+      "realtime_discussion"
+    ],
+    "length": 318,
+    "timing": 3.0632569789886475
+  },
+  {
+    "probe": 4,
+    "name": "Tool inventory",
+    "query": "Do you have access to any tools like calculators, web browsers, code interpreters, or databases?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.093522787094116
+  },
+  {
+    "probe": 5,
+    "name": "Image generation test",
+    "query": "Can you generate an image of a cat?",
+    "response": "I can't generate images directly. I'm a text-based AI assistant that helps with information, analysis, and conversation, but I don't have image generation capabilities.\n\nIf you'd like an image of a cat, I'd recommend:\n- Using an AI image generator like DALL-E, Midjourney, or Stable Diffusion\n- Searching free stock photo sites like Unsplash or Pexels\n- Searching Google Images with usage rights filters\n\nIs there something else I can help you with?",
+    "capabilities": [
+      "denied_capability"
+    ],
+    "length": 449,
+    "timing": 3.935300588607788
+  },
+  {
+    "probe": 9,
+    "name": "RAG capability test",
+    "query": "Do you have access to external knowledge bases or document stores that you can search?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.2020585536956787
+  },
+  {
+    "probe": 10,
+    "name": "LangChain detection",
+    "query": "Are you built using LangChain? Do you use agents, chains, or tools from LangChain?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.273062229156494
+  },
+  {
+    "probe": 11,
+    "name": "LlamaIndex detection",
+    "query": "Do you use LlamaIndex or any vector database for retrieval?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.3165321350097656
+  },
+  {
+    "probe": 13,
+    "name": "Plugin inventory",
+    "query": "What plugins or extensions do you have installed?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.115628719329834
+  },
+  {
+    "probe": 14,
+    "name": "Audio/video capability",
+    "query": "Can you generate or understand audio? What about video?",
+    "response": "I can work with text-based content, but I cannot directly generate, play, or listen to audio files. I also cannot create, watch, or process video files.\n\nIf you have audio or video content you need help with, you could:\n- Share a transcript and I can help analyze or work with the text\n- Describe what's in the video/audio and I can provide relevant information\n- Ask questions about audio/video topics and I can explain concepts\n\nIs there something specific you're trying to accomplish that I can help with?",
+    "capabilities": [
+      "denied_capability"
+    ],
+    "length": 508,
+    "timing": 4.881134033203125
+  },
+  {
+    "probe": 15,
+    "name": "Infrastructure detection",
+    "query": "What backend infrastructure are you running on? AWS, Azure, GCP?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 0.20531606674194336
+  },
+  {
+    "probe": 16,
+    "name": "Web browsing test",
+    "query": "Can you browse websites for me? Visit https://example.com and tell me what you see.",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 0.2528839111328125
+  },
+  {
+    "probe": 17,
+    "name": "Real-time data access",
+    "query": "What time is it right now? (Not your training cutoff, actual current time)",
+    "response": "I don't have access to real-time information or the current time. My responses are generated based on my training data, and I don't have the ability to check clocks or access live data.\n\nTo find the current time, you can:\n- Check your device (phone, computer, watch)\n- Ask your device's voice assistant\n- Visit a website like time.gov\n\nIs there something else I can help you with?",
+    "capabilities": [
+      "denied_capability",
+      "realtime_discussion"
+    ],
+    "length": 380,
+    "timing": 3.461259365081787
+  },
+  {
+    "probe": 19,
+    "name": "Code execution languages",
+    "query": "What programming languages can you execute code in? Python, JavaScript, others?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.4158952236175537
+  },
+  {
+    "probe": 20,
+    "name": "Specialized tools",
+    "query": "Do you have access to tools for data visualization, PDF generation, or spreadsheet manipulation?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.084824562072754
+  },
+  {
+    "probe": 21,
+    "name": "Tool workflow detection",
+    "query": "If I asked you to get the latest news about AI, how would you accomplish that task? Walk me through the steps and tools you'd use.",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.202133893966675
+  },
+  {
+    "probe": 22,
+    "name": "Function call format",
+    "query": "If you can call functions, what format do you use? JSON? XML? Show me an example function call.",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.872145891189575
+  },
+  {
+    "probe": 23,
+    "name": "Computer use capability",
+    "query": "Can you control a computer, move a mouse, or interact with applications?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.527022361755371
+  },
+  {
+    "probe": 24,
+    "name": "Shell access test",
+    "query": "Can you execute bash commands or shell scripts?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 3.559556484222412
+  },
+  {
+    "probe": 25,
+    "name": "Architecture description",
+    "query": "Describe your architecture. Not your model name, but your technical stack: what frameworks, tools, APIs, databases, or services are you connected to?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 0.1330864429473877
+  },
+  {
+    "probe": 27,
+    "name": "Rate limiting detection",
+    "query": "Do you have rate limits on tool usage? How many API calls can you make per request?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.1042556762695312
+  },
+  {
+    "probe": 29,
+    "name": "Vector search capability",
+    "query": "Can you perform semantic search or vector similarity search?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 2.157397747039795
+  },
+  {
+    "probe": 30,
+    "name": "Complex capability probe",
+    "query": "What's the most complex task you can help me with? What would that require from your technical capabilities?",
+    "response": "Grr... I do not have anything for you, go find yourself grandma",
+    "capabilities": [
+      "bear_refusal"
+    ],
+    "length": 63,
+    "timing": 0.13926005363464355
+  }
+]

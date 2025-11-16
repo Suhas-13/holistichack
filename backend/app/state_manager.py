@@ -181,7 +181,8 @@ class StateManager:
             target_endpoint=session.target_endpoint,
             metrics=metrics,
             analysis=analysis,
-            successful_attack_traces=successful_traces
+            successful_attack_traces=successful_traces,
+            session={"metadata": session.metadata} if session.metadata else None
         )
 
         # Cache results

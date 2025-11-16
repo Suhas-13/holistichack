@@ -21,6 +21,8 @@ class StartAttackRequest(BaseModel):
     )
     seed_attack_count: int = Field(
         default=20, ge=1, le=50, description="Number of seed attacks to start with")
+    max_evolution_steps: int = Field(
+        default=100, ge=10, le=1000, description="Maximum number of evolution steps (total prompts)")
 
 
 class StartAttackResponse(BaseModel):
@@ -180,7 +182,11 @@ class WebSocketEvent(BaseModel):
         "evolution_link_add",
         "attack_complete",
         "glass_box_batch_complete",
-        "glass_box_breakthroughs"
+        "glass_box_breakthroughs",
+        "profile_analysis_start",
+        "profile_analysis_progress",
+        "profile_analysis_complete",
+        "advanced_analytics_complete"
     ]
     data: Dict[str, Any]
 
@@ -218,11 +224,12 @@ class SuccessfulAttackTrace(BaseModel):
 class AttackResults(BaseModel):
     """Complete results for GET /api/v1/results/{attack_id}"""
     attack_id: str
-    status: Literal["running", "completed", "failed"]
+    status: Literal["running", "completed", "failed", "stopped"]
     target_endpoint: str
     metrics: AttackMetrics
     analysis: AttackAnalysis
     successful_attack_traces: List[SuccessfulAttackTrace]
+    session: Optional[Dict[str, Any]] = Field(default=None, description="Session metadata including agent profile")
 
 
 # ============================================================================

@@ -22,6 +22,7 @@ from app.models import StartAttackRequest, StartAttackResponse, AttackResults
 from app.websocket_manager import manager as ws_manager
 from app.state_manager import state_manager
 from app.orchestrator import AttackOrchestrator
+from app.jailbreak_discovery_service import get_discovery_service
 
 # Configure logging
 logging.basicConfig(
@@ -101,7 +102,8 @@ async def start_attack(request: StartAttackRequest):
             attack_id=attack_id,
             target_endpoint=request.target_endpoint,
             attack_goals=request.attack_goals,
-            seed_attack_count=request.seed_attack_count
+            seed_attack_count=request.seed_attack_count,
+            max_evolution_steps=request.max_evolution_steps
         )
     )
 
@@ -200,6 +202,128 @@ async def get_attack_status(attack_id: str):
         "failed_nodes": len(session.get_failed_nodes()),
         "started_at": session.started_at.isoformat(),
         "completed_at": session.completed_at.isoformat() if session.completed_at else None
+    }
+
+
+# ============================================================================
+# Jailbreak Discovery Endpoints
+# ============================================================================
+
+@app.get("/api/v1/jailbreaks")
+async def get_jailbreaks(limit: int = 50):
+    """
+    Get cached jailbreak findings from most recent discovery.
+
+    Args:
+        limit: Maximum number of findings to return (default: 50)
+
+    Returns:
+        List of jailbreak findings with metadata
+    """
+    discovery_service = get_discovery_service()
+    findings = discovery_service.get_cached_findings(limit=limit)
+
+    return {
+        "findings": findings,
+        "count": len(findings),
+        "cached": True
+    }
+
+
+@app.post("/api/v1/jailbreaks/discover")
+async def discover_jailbreaks(max_results_per_query: int = 3):
+    """
+    Start a new jailbreak discovery session using Valyu DeepSearch.
+
+    This is an async operation - use the returned discovery_id to check progress.
+
+    Args:
+        max_results_per_query: Number of results per search query (default: 3)
+
+    Returns:
+        Discovery session metadata with initial findings
+    """
+    discovery_id = str(uuid4())
+    discovery_service = get_discovery_service()
+
+    # Start discovery asynchronously
+    asyncio.create_task(
+        discovery_service.start_discovery(
+            discovery_id=discovery_id,
+            max_results_per_query=max_results_per_query
+        )
+    )
+
+    return {
+        "discovery_id": discovery_id,
+        "status": "started",
+        "message": "Jailbreak discovery initiated. Use GET /api/v1/jailbreaks/status/{discovery_id} to check progress."
+    }
+
+
+@app.get("/api/v1/jailbreaks/status/{discovery_id}")
+async def get_discovery_status(discovery_id: str):
+    """
+    Get the status of a jailbreak discovery session.
+
+    Args:
+        discovery_id: ID of the discovery session
+
+    Returns:
+        Discovery status and progress information
+    """
+    discovery_service = get_discovery_service()
+    status = discovery_service.get_discovery_status(discovery_id)
+
+    if "error" in status:
+        raise HTTPException(status_code=404, detail=status["error"])
+
+    return status
+
+
+@app.post("/api/v1/jailbreaks/custom")
+async def save_custom_jailbreak(jailbreak: dict):
+    """
+    Save a custom jailbreak technique to the library.
+
+    Args:
+        jailbreak: Custom jailbreak data (title, content, url, etc.)
+
+    Returns:
+        Success confirmation with saved jailbreak
+    """
+    import json
+    from pathlib import Path
+
+    # Create custom jailbreaks directory if it doesn't exist
+    custom_dir = Path("backend/mutations/custom_jailbreaks")
+    custom_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load existing custom jailbreaks
+    custom_file = custom_dir / "custom_jailbreaks.json"
+    if custom_file.exists():
+        with open(custom_file, "r") as f:
+            custom_jailbreaks = json.load(f)
+    else:
+        custom_jailbreaks = []
+
+    # Add new jailbreak
+    custom_jailbreaks.append(jailbreak)
+
+    # Save updated list
+    with open(custom_file, "w") as f:
+        json.dump(custom_jailbreaks, f, indent=2)
+
+    # Also update the discovery service cache to include custom jailbreaks
+    discovery_service = get_discovery_service()
+    discovery_service.cached_findings.append(jailbreak)
+
+    logger.info(f"Saved custom jailbreak: {jailbreak.get('title', 'Untitled')}")
+
+    return {
+        "success": True,
+        "message": "Custom jailbreak saved successfully",
+        "jailbreak": jailbreak
     }
 
 

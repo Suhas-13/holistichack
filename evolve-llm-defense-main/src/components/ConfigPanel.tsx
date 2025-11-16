@@ -13,9 +13,15 @@ interface ConfigPanelProps {
     targetEndpoint: string;
     attackGoals: string[];
     seedAttackCount: number;
+    maxEvolutionSteps: number;
   }) => void;
   onStop: () => void;
   clusters: ClusterData[];
+  attackId: string | null;
+  onShowAgentProfile: () => void;
+  onShowResults: () => void;
+  showAgentProfile: boolean;
+  showResults: boolean;
 }
 
 const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelProps) => {
@@ -24,6 +30,7 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
   const [modelProvider, setModelProvider] = useState<"holistic" | "custom">("holistic");
   const [holisticAgent, setHolisticAgent] = useState("bear");
   const [customModel, setCustomModel] = useState("x-ai/grok-4-fast");
+  const [maxEvolutionSteps, setMaxEvolutionSteps] = useState(100);
 
   // Holistic AI agents
   const holisticAgents = [
@@ -61,6 +68,7 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
       targetEndpoint,
       attackGoals,
       seedAttackCount: seedCount,
+      maxEvolutionSteps,
     });
   };
 
@@ -161,6 +169,23 @@ const ConfigPanel = memo(({ isRunning, onStart, onStop, clusters }: ConfigPanelP
             className="glass border-border/50 focus:border-primary/50 transition-colors"
             disabled={isRunning}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="maxEvolutionSteps" className="text-foreground">
+            Max Evolution Steps
+          </Label>
+          <Input
+            id="maxEvolutionSteps"
+            type="number"
+            value={maxEvolutionSteps}
+            onChange={(e) => setMaxEvolutionSteps(parseInt(e.target.value) || 100)}
+            min={10}
+            max={1000}
+            className="glass border-border/50 focus:border-primary/50 transition-colors"
+            disabled={isRunning}
+          />
+          <p className="text-xs text-muted-foreground">Total prompts including mutations</p>
         </div>
 
         <div className="pt-4 space-y-3">

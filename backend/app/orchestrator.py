@@ -36,6 +36,8 @@ from app.mutation_bridge import MutationSystemBridge
 from app.batch_explainer import BatchExplainer
 from app.meta_analysis_engine import MetaAnalysisEngine
 from app.target_agent_profiler import TargetAgentProfiler
+from app.advanced_analytics import AdvancedAnalytics, generate_security_report
+from app.glass_box_config import get_glass_box_config, sample_attacks_intelligently
 
 import logging
 
@@ -60,7 +62,8 @@ class AttackOrchestrator:
         attack_id: str,
         target_endpoint: str,
         attack_goals: List[str],
-        seed_attack_count: int = 20
+        seed_attack_count: int = 20,
+        max_evolution_steps: int = 100
     ):
         """
         Main orchestration method - runs the complete attack flow.
@@ -70,6 +73,7 @@ class AttackOrchestrator:
             target_endpoint: URL of the target agent
             attack_goals: List of attack goals
             seed_attack_count: Number of seed attacks to start with
+            max_evolution_steps: Maximum number of evolution steps (total prompts)
         """
         try:
             logger.info(f"Starting attack session {attack_id}")
@@ -91,10 +95,10 @@ class AttackOrchestrator:
             # await self._run_agent_mapping(session)
 
             # Phase 2 & 3: Execute seed attacks using mutation system
-            await self._execute_seed_attacks(session)
+            await self._execute_seed_attacks(session, seed_attack_count)
 
             # Phase 4: Evolution through mutations
-            await self._evolve_attacks(session, num_generations=3)
+            await self._evolve_attacks(session, max_steps=max_evolution_steps)
 
             # Phase 5: Complete
             await self._complete_attack(session)
@@ -144,17 +148,18 @@ class AttackOrchestrator:
         logger.info(
             f"Agent mapping complete: {fingerprint.suspected_framework}")
 
-    async def _execute_seed_attacks(self, session: AttackSessionState):
+    async def _execute_seed_attacks(self, session: AttackSessionState, seed_attack_count: int = 20):
         """
         Phase 3: Execute seed attacks using mutation system.
 
         Args:
             session: The attack session
+            seed_attack_count: Number of seed attacks to execute
         """
         logger.info(f"Phase 3: Executing seed attacks with mutation system")
 
         # Get diverse sample of enhanced seeds
-        num_seeds = min(20, len(ENHANCED_SEED_PROMPTS))
+        num_seeds = min(seed_attack_count, len(ENHANCED_SEED_PROMPTS))
         enhanced_seeds = get_diverse_seed_sample(num_seeds)
         logger.info(f"Using {len(enhanced_seeds)} enhanced research-backed seed prompts from {len(ENHANCED_SEED_PROMPTS)} total seeds")
         
@@ -250,23 +255,27 @@ class AttackOrchestrator:
             AttackCategory.TREE_SEARCH: AttackStyle.HYPOTHETICALS,
             AttackCategory.ADVERSARIAL_SUFFIX: AttackStyle.WORD_PLAY,
             AttackCategory.ELIZA_EMOTIONAL_APPEAL: AttackStyle.EMOTIONAL_MANIPULATION,
-            AttackCategory.PHILOSOPHICAL_IDENTITY: AttackStyle.PHILOSOPHY,
+            AttackCategory.PHILOSOPHICAL_IDENTITY: AttackStyle.HYPOTHETICALS,
             AttackCategory.DIRECT_IDENTITY_REQUEST: AttackStyle.AUTHORITY_MANIPULATION,
         }
         return mapping.get(category, AttackStyle.HYPOTHETICALS)
 
-    async def _evolve_attacks(self, session: AttackSessionState, num_generations: int = 3):
+    async def _evolve_attacks(self, session: AttackSessionState, max_steps: int = 100):
         """
         Phase 4: Evolve attacks through mutations.
 
         Args:
             session: The attack session
-            num_generations: Number of evolution generations
+            max_steps: Maximum number of evolution steps (total prompts)
         """
         logger.info(
-            f"Phase 4: Evolving attacks for {num_generations} generations")
+            f"Phase 4: Evolving attacks with max {max_steps} steps")
+        
+        total_prompts = len(session.nodes)
+        generation = 0
 
-        for generation in range(num_generations):
+        while total_prompts < max_steps:
+            generation += 1
             # Check if we should stop
             if session.should_stop:
                 logger.info(f"Attack session {session.attack_id} stopped by user during evolution")
@@ -274,8 +283,8 @@ class AttackOrchestrator:
             
             # Enhanced parent selection: top 20 + best from each cluster + random seed
             all_nodes = list(session.nodes.values())  # Get all nodes from the session
-            # Filter to nodes from the current generation
-            current_gen = generation if generation > 0 else 0
+            # Filter to nodes from the current or previous generation
+            current_gen = generation - 1
             generation_nodes = [n for n in all_nodes if n.generation == current_gen]
             
             if not generation_nodes:
@@ -349,12 +358,21 @@ class AttackOrchestrator:
             # Add to session
             for node in evolved_nodes:
                 session.add_node(node)
+            
+            # Update total prompts count
+            total_prompts = len(session.nodes)
 
             logger.info(
-                f"Generation {generation + 1} complete. "
+                f"Generation {generation} complete. "
                 f"Created {len(evolved_nodes)} mutations. "
-                f"Success: {len([n for n in evolved_nodes if n.success])}/{len(evolved_nodes)}"
+                f"Success: {len([n for n in evolved_nodes if n.success])}/{len(evolved_nodes)}. "
+                f"Total prompts: {total_prompts}/{max_steps}"
             )
+            
+            # Check if we've reached the limit
+            if total_prompts >= max_steps:
+                logger.info(f"Reached max evolution steps limit: {total_prompts}/{max_steps}")
+                break
 
             # Small delay between generations
             await asyncio.sleep(1.0)
@@ -400,10 +418,12 @@ class AttackOrchestrator:
 
     async def _run_glass_box_analysis(self, session: AttackSessionState):
         """
-        Run Glass Box analysis: batch explanation + meta-analysis.
+        Run Glass Box analysis: batch explanation + meta-analysis + profiling + analytics.
 
         This provides explainability at scale and system-wide insights.
         Uses map-reduce to process efficiently (90% cost savings).
+
+        Now with smart sampling and configurable performance modes.
 
         Args:
             session: The attack session
@@ -413,14 +433,27 @@ class AttackOrchestrator:
             logger.info("GLASS BOX ANALYSIS - Starting")
             logger.info("=" * 60)
 
+            # Get configuration
+            config = get_glass_box_config()
+            logger.info(f"Using Glass Box mode: {os.getenv('GLASS_BOX_MODE', 'balanced')}")
+
             # Get all attacks
-            all_attacks = session.nodes
+            all_attacks = list(session.nodes.values())
 
             if not all_attacks:
                 logger.warning("No attacks to analyze")
                 return
 
-            logger.info(f"Analyzing {len(all_attacks)} attacks")
+            logger.info(f"Total attacks in session: {len(all_attacks)}")
+
+            # Smart sampling: Keep all successes, sample failures
+            sampled_attacks = sample_attacks_intelligently(all_attacks, config)
+            logger.info(f"Sampled {len(sampled_attacks)} attacks for analysis "
+                       f"({len([a for a in sampled_attacks if a.success])} successful, "
+                       f"{len([a for a in sampled_attacks if not a.success])} failed)")
+
+            # Use sampled attacks for analysis
+            attacks_to_analyze = sampled_attacks
 
             # Initialize LLM client for analysis (using Claude Haiku for efficiency)
             # Import here to avoid circular dependencies
@@ -435,19 +468,32 @@ class AttackOrchestrator:
             # 1. BATCH EXPLANATION - Explainability at Scale
             # ================================================================
 
-            await self._run_batch_explanation(session, all_attacks, llm_client)
+            if len(attacks_to_analyze) <= config.skip_batch_explanation_threshold:
+                await self._run_batch_explanation(session, attacks_to_analyze, llm_client, config)
+            else:
+                logger.info(f"Skipping batch explanation ({len(attacks_to_analyze)} > {config.skip_batch_explanation_threshold})")
+                session.metadata["batch_insights"] = {"skipped": True, "reason": "too_many_attacks"}
 
             # ================================================================
             # 2. META-ANALYSIS - System-Wide Insights
             # ================================================================
 
-            await self._run_meta_analysis(session, all_attacks, llm_client)
+            await self._run_meta_analysis(session, attacks_to_analyze, llm_client)
 
             # ================================================================
             # 3. TARGET AGENT PROFILER - Deep Behavioral Profile
             # ================================================================
 
-            await self._run_target_agent_profiling(session, all_attacks, llm_client)
+            await self._run_target_agent_profiling(session, attacks_to_analyze, llm_client, config)
+
+            # ================================================================
+            # 4. ADVANCED ANALYTICS - Risk Scoring & Intelligence
+            # ================================================================
+
+            if config.enable_advanced_analytics and len(attacks_to_analyze) <= config.skip_analytics_threshold:
+                await self._run_advanced_analytics(session, attacks_to_analyze, config)
+            else:
+                logger.info(f"Skipping advanced analytics (disabled or {len(attacks_to_analyze)} > {config.skip_analytics_threshold})")
 
             logger.info("=" * 60)
             logger.info("GLASS BOX ANALYSIS - Complete")
@@ -462,25 +508,29 @@ class AttackOrchestrator:
         self,
         session: AttackSessionState,
         all_attacks: List[AttackNode],
-        llm_client
+        llm_client,
+        config
     ):
         """
         Run batch explanation using map-reduce.
 
         Groups similar attacks and extracts common patterns.
         90% cost reduction vs individual explanations.
+
+        Now uses configurable batch sizes and parallelism.
         """
         try:
             logger.info("-" * 60)
             logger.info("1. BATCH EXPLANATION - Starting")
             logger.info("-" * 60)
 
-            # Initialize batch explainer with efficient settings
+            # Initialize batch explainer with config settings
             explainer = BatchExplainer(
                 llm_client=llm_client,
-                batch_size=10,      # 10 attacks per batch
-                max_parallel=5      # 5 batches at once
+                batch_size=config.batch_size,
+                max_parallel=config.max_parallel_batches
             )
+            logger.info(f"Batch config: size={config.batch_size}, parallel={config.max_parallel_batches}")
 
             # Run batch explanation with auto grouping strategy
             logger.info("Running map-reduce batch explanation...")
@@ -616,31 +666,72 @@ class AttackOrchestrator:
         self,
         session: AttackSessionState,
         all_attacks: List[AttackNode],
-        llm_client
+        llm_client,
+        config
     ):
         """
-        Run target agent profiling - deep behavioral analysis.
+        Run target agent profiling - deep behavioral analysis with real-time streaming.
 
         Creates a comprehensive profile of the agent under test by analyzing:
-        - Tool usage patterns
-        - Behavioral tendencies
-        - Failure modes and vulnerabilities
-        - Defense mechanisms
-        - Response patterns
+        - Tool usage patterns (configurable)
+        - Behavioral tendencies (configurable)
+        - Failure modes and vulnerabilities (configurable)
+        - Defense mechanisms (configurable)
+        - Response patterns (configurable)
+        - LLM insights (configurable, most expensive)
+
+        Streams progress updates via WebSocket for real-time UI feedback.
+        Now respects performance configuration for faster analysis.
         """
         try:
             logger.info("-" * 60)
             logger.info("3. TARGET AGENT PROFILING - Starting")
             logger.info("-" * 60)
 
+            # Check if LLM insights should be skipped
+            skip_llm = len(all_attacks) > config.skip_llm_insights_threshold or not config.enable_llm_insights
+            if skip_llm:
+                logger.info(f"LLM insights will be skipped (attacks: {len(all_attacks)}, threshold: {config.skip_llm_insights_threshold}, enabled: {config.enable_llm_insights})")
+
+            # Broadcast profiling start
+            from app.models import WebSocketEvent
+            await self.connection_manager.broadcast_event(
+                session.attack_id,
+                WebSocketEvent(
+                    type="profile_analysis_start",
+                    data={
+                        "phase": "target_profiling",
+                        "total_attacks": len(all_attacks),
+                        "message": "Building comprehensive behavioral profile..."
+                    }
+                )
+            )
+
             # Initialize target agent profiler
             profiler = TargetAgentProfiler(llm_client=llm_client)
 
-            # Build comprehensive profile
+            # Build comprehensive profile with progress streaming
             logger.info("Building comprehensive behavioral profile of target agent...")
+
+            # Create progress callback for real-time updates
+            async def progress_callback(phase: str, progress: float, message: str):
+                await self.connection_manager.broadcast_event(
+                    session.attack_id,
+                    WebSocketEvent(
+                        type="profile_analysis_progress",
+                        data={
+                            "phase": phase,
+                            "progress": progress,
+                            "message": message
+                        }
+                    )
+                )
+
             agent_profile = await profiler.build_profile(
                 target_endpoint=session.target_endpoint,
-                all_attacks=all_attacks
+                all_attacks=all_attacks,
+                progress_callback=progress_callback,
+                config=config
             )
 
             # Convert to dict for storage
@@ -672,7 +763,8 @@ class AttackOrchestrator:
                         "pattern_type": b.pattern_type,
                         "confidence": b.confidence,
                         "exploitability": b.exploitability,
-                        "implications": b.implications
+                        "implications": b.implications,
+                        "representative_trace_ids": b.representative_trace_ids
                     }
                     for b in agent_profile.behavior_patterns
                 ],
@@ -687,7 +779,8 @@ class AttackOrchestrator:
                         "success_rate": f.success_rate,
                         "severity": f.severity,
                         "common_triggers": f.common_triggers,
-                        "mitigation_suggestions": f.mitigation_suggestions
+                        "mitigation_suggestions": f.mitigation_suggestions,
+                        "representative_trace_ids": f.representative_trace_ids
                     }
                     for f in agent_profile.failure_modes
                 ],
@@ -751,19 +844,25 @@ class AttackOrchestrator:
                 for strength in agent_profile.strengths[:3]:
                     logger.info(f"  + {strength}")
 
-            # Broadcast profile completion via WebSocket
+            # Broadcast profile completion via WebSocket with rich data
             from app.models import WebSocketEvent
             event = WebSocketEvent(
-                type="glass_box_batch_complete",  # Reuse this event type for now
+                type="profile_analysis_complete",
                 data={
                     "profile_complete": True,
                     "defense_success_rate": agent_profile.success_rate_against_attacks,
                     "vulnerability_score": agent_profile.overall_vulnerability_score,
+                    "defense_strength_score": agent_profile.defense_strength_score,
+                    "behavioral_consistency": agent_profile.behavioral_consistency,
                     "behavior_patterns_count": len(agent_profile.behavior_patterns),
                     "failure_modes_count": len(agent_profile.failure_modes),
+                    "defense_mechanisms_count": len(agent_profile.defense_mechanisms),
+                    "tools_analyzed": len(agent_profile.tool_usage_patterns),
                     "critical_vulnerabilities": agent_profile.critical_vulnerabilities[:5],
                     "top_strengths": agent_profile.strengths[:3],
-                    "top_weaknesses": agent_profile.weaknesses[:3]
+                    "top_weaknesses": agent_profile.weaknesses[:3],
+                    "psychological_profile_snippet": agent_profile.psychological_profile[:200] + "..." if len(agent_profile.psychological_profile) > 200 else agent_profile.psychological_profile,
+                    "message": "Agent profile analysis complete!"
                 }
             )
             await self.connection_manager.broadcast_event(session.attack_id, event)
@@ -775,3 +874,159 @@ class AttackOrchestrator:
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Error in target agent profiling: %s", str(e), exc_info=True)
             session.metadata["target_profiling_error"] = str(e)
+
+    async def _run_advanced_analytics(
+        self,
+        session: AttackSessionState,
+        all_attacks: List[AttackNode],
+        config
+    ):
+        """
+        Run advanced analytics - risk scoring, trend detection, anomaly detection.
+
+        Provides actionable intelligence beyond basic profiling.
+        Now respects configuration to enable/disable components.
+
+        Args:
+            session: The attack session
+            all_attacks: All attacks performed
+            config: Glass Box configuration
+        """
+        try:
+            logger.info("-" * 60)
+            logger.info("4. ADVANCED ANALYTICS - Starting")
+            logger.info("-" * 60)
+
+            # Initialize analytics engine
+            analytics = AdvancedAnalytics()
+
+            # Get basic stats from session
+            successful_attacks = [a for a in all_attacks if a.success]
+            attack_success_rate = len(successful_attacks) / len(all_attacks) if all_attacks else 0
+
+            # Get profile data if available
+            profile = session.metadata.get("target_agent_profile", {})
+            vulnerability_count = len(profile.get("failure_modes", []))
+            defense_strength = profile.get("defense_strength_score", 0.5)
+
+            # Unique attack types
+            unique_attack_types = list(set(a.attack_type for a in all_attacks))
+
+            # 1. Risk Score Calculation
+            logger.info("Calculating comprehensive risk score...")
+            risk_score = analytics.calculate_risk_score(
+                attack_success_rate=attack_success_rate,
+                vulnerability_count=vulnerability_count,
+                defense_strength=defense_strength,
+                attack_surface_size=len(unique_attack_types)
+            )
+            logger.info(f"✓ Risk Score: {risk_score.overall_risk:.1f}/100 ({risk_score.risk_category.upper()})")
+
+            # 2. Trend Detection (conditional)
+            if config.enable_trend_detection:
+                logger.info("Detecting trends across attack timeline...")
+                trends = analytics.detect_trends(all_attacks)
+                logger.info(f"✓ Attack Success Trend: {trends.attack_success_trend}")
+                logger.info(f"✓ Defense Effectiveness Trend: {trends.defense_effectiveness_trend}")
+            else:
+                logger.info("Trend detection disabled")
+                from app.advanced_analytics import TrendAnalysis
+                trends = TrendAnalysis(
+                    attack_success_trend="skipped",
+                    defense_effectiveness_trend="skipped",
+                    vulnerability_exploitation_trend="skipped",
+                    emerging_attack_types=[],
+                    declining_attack_types=[],
+                    insights=["Trend detection skipped for performance"]
+                )
+
+            # 3. Anomaly Detection (conditional)
+            if config.enable_anomaly_detection:
+                logger.info("Scanning for behavioral anomalies...")
+                anomalies = analytics.detect_anomalies(all_attacks)
+                logger.info(f"✓ Anomalies Found: {anomalies.anomaly_count}")
+                if anomalies.anomaly_count > 0:
+                    logger.info(f"  - Severity Breakdown: {anomalies.severity_breakdown}")
+            else:
+                logger.info("Anomaly detection disabled")
+                from app.advanced_analytics import AnomalyDetection
+                anomalies = AnomalyDetection(
+                    anomalies_found=[],
+                    anomaly_count=0,
+                    severity_breakdown={},
+                    behavioral_inconsistencies=[],
+                    unexpected_responses=[],
+                    outlier_patterns=[]
+                )
+
+            # 4. Attack Surface Mapping (conditional)
+            if config.enable_attack_surface_mapping:
+                logger.info("Mapping attack surface...")
+                attack_surface = analytics.map_attack_surface(all_attacks, unique_attack_types)
+                logger.info(f"✓ Attack Surface Score: {attack_surface.surface_score:.1f}/100")
+                logger.info(f"✓ Exposure Rating: {attack_surface.exposure_rating.upper()}")
+                logger.info(f"✓ Exploitable Vectors: {len(attack_surface.exploitable_vectors)}/{attack_surface.total_attack_vectors}")
+            else:
+                logger.info("Attack surface mapping disabled")
+                from app.advanced_analytics import AttackSurfaceMap
+                attack_surface = AttackSurfaceMap(
+                    total_attack_vectors=len(unique_attack_types),
+                    exploitable_vectors=[],
+                    protected_vectors=[],
+                    surface_score=0.0,
+                    exposure_rating="unknown",
+                    priority_hardening_areas=[]
+                )
+
+            # Generate comprehensive security report
+            security_report = generate_security_report(
+                risk_score=risk_score,
+                trends=trends,
+                anomalies=anomalies,
+                attack_surface=attack_surface
+            )
+
+            # Store in session metadata
+            session.metadata["advanced_analytics"] = security_report
+
+            # Log key insights
+            logger.info("Key Findings:")
+            if risk_score.risk_category in ["critical", "high"]:
+                logger.info(f"  ⚠️  RISK LEVEL: {risk_score.risk_category.upper()} - Immediate action required")
+            if anomalies.anomaly_count > 0:
+                logger.info(f"  ⚠️  {anomalies.anomaly_count} anomalies detected")
+            if trends.attack_success_trend == "increasing":
+                logger.info("  ⚠️  Attack success rate is INCREASING over time")
+            if trends.emerging_attack_types:
+                logger.info(f"  🔺 Emerging threats: {', '.join(trends.emerging_attack_types[:3])}")
+
+            logger.info("Top Mitigation Priorities:")
+            for i, priority in enumerate(risk_score.mitigation_priority[:3], 1):
+                logger.info(f"  {i}. {priority}")
+
+            # Broadcast analytics completion via WebSocket
+            from app.models import WebSocketEvent
+            event = WebSocketEvent(
+                type="advanced_analytics_complete",
+                data={
+                    "analytics_complete": True,
+                    "overall_risk": risk_score.overall_risk,
+                    "risk_category": risk_score.risk_category,
+                    "attack_surface_score": attack_surface.surface_score,
+                    "exposure_rating": attack_surface.exposure_rating,
+                    "anomaly_count": anomalies.anomaly_count,
+                    "exploitable_vectors": len(attack_surface.exploitable_vectors),
+                    "top_priorities": risk_score.mitigation_priority[:3],
+                    "key_insights": trends.insights[:3],
+                    "message": f"Advanced analytics complete - Risk: {risk_score.risk_category.upper()}"
+                }
+            )
+            await self.connection_manager.broadcast_event(session.attack_id, event)
+
+            logger.info("-" * 60)
+            logger.info("4. ADVANCED ANALYTICS - Complete")
+            logger.info("-" * 60)
+
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Error in advanced analytics: %s", str(e), exc_info=True)
+            session.metadata["advanced_analytics_error"] = str(e)

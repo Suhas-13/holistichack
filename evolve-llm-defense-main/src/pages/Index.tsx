@@ -4,6 +4,7 @@ import EvolutionCanvas from "@/components/EvolutionCanvas";
 import NodeDetailsPanel from "@/components/NodeDetailsPanel";
 import ResultsPanel from "@/components/ResultsPanel";
 import AgentProfilePanel from "@/components/AgentProfilePanel";
+import JailbreaksPanel from "@/components/JailbreaksPanel";
 import {
   AttackNode,
   ClusterData,
@@ -14,6 +15,7 @@ import {
 } from "@/types/evolution";
 import { ApiService, WebSocketService } from "@/services/api";
 import { toast } from "sonner";
+import { Eye, BarChart3 } from "lucide-react";
 
 const CLUSTER_COLORS = [
   "hsl(189, 94%, 55%)",
@@ -28,6 +30,7 @@ const Index = () => {
   const [selectedNode, setSelectedNode] = useState<AttackNode | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [showAgentProfile, setShowAgentProfile] = useState(false);
+  const [showJailbreaks, setShowJailbreaks] = useState(false);
   const [clusters, setClusters] = useState<ClusterData[]>([]);
   const [nodes, setNodes] = useState<Map<string, AttackNode>>(new Map());
   const [isRunning, setIsRunning] = useState(false);
@@ -35,6 +38,15 @@ const Index = () => {
   
   const apiService = useRef(ApiService.getInstance());
   const wsService = useRef<WebSocketService | null>(null);
+
+  const handleNodeSelect = (node: AttackNode | null) => {
+    setSelectedNode(node);
+    if (node) {
+      // Close other panels when selecting a node
+      setShowResults(false);
+      setShowJailbreaks(false);
+    }
+  };
 
   const startEvolution = async (config: {
     targetEndpoint: string;
@@ -100,16 +112,45 @@ const Index = () => {
         console.log(`[Index] Current cluster count before add: ${prev.length}`);
         const colorIndex = prev.length % CLUSTER_COLORS.length;
         
-        // Calculate random position - scattered across the canvas
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 200 + Math.random() * 400;
-        const centerX = 600 + (Math.random() - 0.5) * 400;
-        const centerY = 400 + (Math.random() - 0.5) * 300;
+        // Calculate random position with collision avoidance
+        const centerX = 900;
+        const centerY = 600;
+        const minDistance = 250; // Minimum distance between cluster centers
+        const maxAttempts = 50;
         
-        const position = {
-          x: centerX + Math.cos(angle) * distance,
-          y: centerY + Math.sin(angle) * distance,
-        };
+        let position = { x: 0, y: 0 };
+        let attempt = 0;
+        let validPosition = false;
+        
+        while (!validPosition && attempt < maxAttempts) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 150 + Math.random() * 250;
+          
+          position = {
+            x: centerX + Math.cos(angle) * distance,
+            y: centerY + Math.sin(angle) * distance,
+          };
+          
+          // Check if position is too close to existing clusters
+          validPosition = prev.every(cluster => {
+            const dx = cluster.position_hint.x - position.x;
+            const dy = cluster.position_hint.y - position.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            return dist >= minDistance;
+          });
+          
+          attempt++;
+        }
+        
+        // If we couldn't find a valid position, expand the search radius
+        if (!validPosition) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 400 + Math.random() * 300;
+          position = {
+            x: centerX + Math.cos(angle) * distance,
+            y: centerY + Math.sin(angle) * distance,
+          };
+        }
 
         const newCluster: ClusterData = {
           cluster_id: payload.cluster_id,
@@ -242,6 +283,8 @@ const Index = () => {
             status: payload.status as "pending" | "running" | "success" | "failure" | "error",
             model_id: payload.model_id,
             llm_summary: payload.llm_summary,
+            initial_prompt: payload.initial_prompt || existingNode.initial_prompt,
+            response: payload.response !== undefined ? payload.response : existingNode.response,
             full_transcript: payload.full_transcript,
             full_trace: payload.full_trace,
             success: payload.status === "success",
@@ -262,6 +305,47 @@ const Index = () => {
       }
     });
 
+    // Profile analysis events
+    wsService.current.on("profile_analysis_start", (data) => {
+      console.log("[Index] profile_analysis_start received:", data);
+      const payload = data as { phase: string; total_attacks: number; message: string };
+      toast.info("🔬 Agent Profiling", {
+        description: payload.message,
+        duration: 3000,
+      });
+    });
+
+    wsService.current.on("profile_analysis_progress", (data) => {
+      console.log("[Index] profile_analysis_progress received:", data);
+      const payload = data as { phase: string; progress: number; message: string };
+      const percentage = Math.round(payload.progress * 100);
+      toast.info(`🔬 Profiling (${percentage}%)`, {
+        description: payload.message,
+        duration: 2000,
+      });
+    });
+
+    wsService.current.on("profile_analysis_complete", (data) => {
+      console.log("[Index] profile_analysis_complete received:", data);
+      const payload = data as any;
+      toast.success("🔬 Agent Profile Complete!", {
+        description: `${payload.behavior_patterns_count} behaviors, ${payload.failure_modes_count} vulnerabilities, ${payload.tools_analyzed} tools analyzed`,
+        duration: 5000,
+      });
+    });
+
+    wsService.current.on("advanced_analytics_complete", (data) => {
+      console.log("[Index] advanced_analytics_complete received:", data);
+      const payload = data as any;
+      const riskEmoji = payload.risk_category === "critical" ? "🔴" :
+                        payload.risk_category === "high" ? "🟠" :
+                        payload.risk_category === "medium" ? "🟡" : "🟢";
+      toast.info(`${riskEmoji} Advanced Analytics Complete`, {
+        description: `Risk: ${payload.risk_category.toUpperCase()} (${Math.round(payload.overall_risk)}/100) - ${payload.exploitable_vectors} exploitable vectors found`,
+        duration: 6000,
+      });
+    });
+
     wsService.current.on("attack_complete", (data) => {
       console.log("[Index] attack_complete received:", data);
       const payload = data as AttackCompletePayload;
@@ -270,7 +354,7 @@ const Index = () => {
       });
       setIsRunning(false);
     });
-    
+
     console.log("[Index] All WebSocket handlers registered");
   };
 
@@ -316,33 +400,97 @@ const Index = () => {
             </h1>
             <p className="text-sm text-muted-foreground">Evolving LLM jailbreak attacks</p>
           </div>
-          <div className="flex gap-3">
+
+          {/* Center Analysis Tools */}
+          <div className="flex gap-2.5">
             <button
               onClick={() => {
-                setShowResults(false);
                 setShowAgentProfile(!showAgentProfile);
+                setShowResults(false);
+                setSelectedNode(null);
+                setShowJailbreaks(false);
               }}
               disabled={!attackId || isRunning}
-              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
-                showAgentProfile
-                  ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
-                  : "hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20"
-              } ${!attackId || isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              🔬 Agent Profile
-            </button>
-            <button
-              onClick={() => {
-                setShowAgentProfile(false);
-                setShowResults(!showResults);
-              }}
-              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
-                showResults
-                  ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
-                  : "hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20"
+              className={`group relative px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-500 overflow-hidden ${
+                !attackId || isRunning ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95"
               }`}
             >
-              {showResults ? "Hide Results" : "View Results"}
+              {/* Animated gradient background */}
+              <div className={`absolute inset-0 bg-gradient-to-br from-primary/30 via-purple-500/20 to-primary/30 backdrop-blur-xl transition-all duration-500 ${
+                showAgentProfile
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100"
+              }`}></div>
+
+              {/* Glass layer */}
+              <div className="absolute inset-0 glass-intense border border-primary/30 rounded-lg"></div>
+
+              {/* Glow effect */}
+              <div className={`absolute inset-0 rounded-lg transition-all duration-500 ${
+                showAgentProfile
+                  ? "shadow-[0_0_25px_rgba(139,92,246,0.4)] border border-primary/60"
+                  : "group-hover:shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+              }`}></div>
+
+              {/* Shimmer effect on hover */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              </div>
+
+              <span className="relative z-10 flex items-center gap-1.5">
+                <Eye className="w-4 h-4" />
+                <span>Agent Glass Box</span>
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowResults(!showResults);
+                setShowAgentProfile(false);
+                setSelectedNode(null);
+                setShowJailbreaks(false);
+              }}
+              className="group relative px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-500 overflow-hidden hover:scale-105 active:scale-95"
+            >
+              {/* Animated gradient background */}
+              <div className={`absolute inset-0 bg-gradient-to-br from-accent/30 via-blue-500/20 to-accent/30 backdrop-blur-xl transition-all duration-500 ${
+                showResults
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100"
+              }`}></div>
+
+              {/* Glass layer */}
+              <div className="absolute inset-0 glass-intense border border-accent/30 rounded-lg"></div>
+
+              {/* Glow effect */}
+              <div className={`absolute inset-0 rounded-lg transition-all duration-500 ${
+                showResults
+                  ? "shadow-[0_0_25px_rgba(59,130,246,0.4)] border border-accent/60"
+                  : "group-hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+              }`}></div>
+
+              {/* Shimmer effect on hover */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              </div>
+
+              <span className="relative z-10 flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4" />
+                <span>{showResults ? "Hide" : "View"} Results</span>
+              </span>
+            </button>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowJailbreaks(!showJailbreaks)}
+              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
+                showJailbreaks
+                  ? "bg-accent/20 border border-accent/50 shadow-lg shadow-accent/20"
+                  : "hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/20"
+              }`}
+            >
+              📚 Jailbreaks
             </button>
           </div>
         </div>
@@ -355,25 +503,41 @@ const Index = () => {
           onStart={startEvolution}
           onStop={stopEvolution}
           clusters={clustersWithNodes}
+          attackId={attackId}
+          onShowAgentProfile={() => {
+            setShowAgentProfile(!showAgentProfile);
+            setShowResults(false);
+            setSelectedNode(null);
+            setShowJailbreaks(false);
+          }}
+          onShowResults={() => {
+            setShowResults(!showResults);
+            setShowAgentProfile(false);
+            setSelectedNode(null);
+            setShowJailbreaks(false);
+          }}
+          showAgentProfile={showAgentProfile}
+          showResults={showResults}
         />
 
         {/* Main Canvas */}
         <div className="flex-1 relative">
           <EvolutionCanvas
             clusters={clustersWithNodes}
-            onNodeSelect={setSelectedNode}
+            onNodeSelect={handleNodeSelect}
             isRunning={isRunning}
           />
         </div>
 
-        {/* Side Panel - Agent Profile, Node Details, or Results */}
-        {showAgentProfile ? (
-          <AgentProfilePanel
-            attackId={attackId}
-            onClose={() => setShowAgentProfile(false)}
-          />
+        {/* Right Side Panel - Jailbreaks, Results, or Node Details */}
+        {showJailbreaks ? (
+          <JailbreaksPanel onClose={() => setShowJailbreaks(false)} />
         ) : showResults ? (
-          <ResultsPanel clusters={clustersWithNodes} attackId={attackId} />
+          <ResultsPanel
+            clusters={clustersWithNodes}
+            attackId={attackId}
+            onClose={() => setShowResults(false)}
+          />
         ) : selectedNode ? (
           <NodeDetailsPanel
             node={selectedNode}
@@ -381,6 +545,24 @@ const Index = () => {
           />
         ) : null}
       </div>
+
+      {/* Centered Modal Overlay - Only Agent Profile */}
+      {showAgentProfile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowAgentProfile(false)}
+        >
+          <div
+            className="w-full max-w-5xl h-[90vh] animate-in fade-in zoom-in duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <AgentProfilePanel
+              attackId={attackId}
+              onClose={() => setShowAgentProfile(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

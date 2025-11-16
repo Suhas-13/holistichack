@@ -79,6 +79,20 @@ const ClusterVisualization = memo(({ clusters, onNodeSelect }: ClusterVisualizat
             pointerEvents="none"
           />
           
+          {/* Cluster label */}
+          <text
+            x={cluster.position_hint.x}
+            y={cluster.position_hint.y - 95}
+            fill="currentColor"
+            fontSize="14"
+            fontWeight="600"
+            textAnchor="middle"
+            opacity="0.8"
+            pointerEvents="none"
+          >
+            {cluster.name}
+          </text>
+          
           {/* Cluster nodes */}
           {(cluster.nodes || []).map((node) => (
             <AttackNodeComponent
