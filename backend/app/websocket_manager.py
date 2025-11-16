@@ -94,14 +94,15 @@ class ConnectionManager:
         )
         await self.broadcast_event(attack_id, event)
 
-    async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str, assigned_goal=None):
+    async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str, assigned_goal=None, generation: int = 0):
         """Convenience method for node_add events"""
         data = {
             "node_id": node_id,
             "cluster_id": cluster_id,
             "parent_ids": parent_ids,
             "attack_type": attack_type,
-            "status": status
+            "status": status,
+            "generation": generation
         }
         if assigned_goal:
             # Convert to dict if it's a model object

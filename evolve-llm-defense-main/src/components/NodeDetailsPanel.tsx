@@ -1,16 +1,48 @@
 import { memo } from "react";
-import { AttackNode } from "@/types/evolution";
-import { X, Clock, Hash, MessageSquare, Brain, Target, Shield } from "lucide-react";
+import { AttackNode, ClusterData } from "@/types/evolution";
+import { X, Clock, Hash, MessageSquare, Brain, Target, Shield, GitBranch, Zap, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { Badge } from "./ui/badge";
 
 interface NodeDetailsPanelProps {
   node: AttackNode;
+  allClusters?: ClusterData[];
   onClose: () => void;
+  onNodeSelect?: (node: AttackNode) => void;
 }
 
-const NodeDetailsPanel = memo(({ node, onClose }: NodeDetailsPanelProps) => {
+const NodeDetailsPanel = memo(({ node, allClusters = [], onClose, onNodeSelect }: NodeDetailsPanelProps) => {
+  // Helper function to find a node by ID
+  const findNodeById = (nodeId: string): AttackNode | undefined => {
+    return allClusters.flatMap(c => c.nodes || []).find(n => n.node_id === nodeId);
+  };
+
+  // Build mutation history chain
+  const buildMutationChain = (currentNode: AttackNode): Array<{node: AttackNode, mutationStyle?: string}> => {
+    const chain: Array<{node: AttackNode, mutationStyle?: string}> = [];
+    let current = currentNode;
+    
+    while (current) {
+      chain.push({
+        node: current,
+        mutationStyle: current.metadata?.mutation_style || current.attack_style
+      });
+      
+      // Get the first parent (for simplicity)
+      const parentId = current.parent_ids[0];
+      if (!parentId) break;
+      
+      const parent = findNodeById(parentId);
+      if (!parent) break;
+      
+      current = parent;
+    }
+    
+    return chain.reverse(); // Return from root to current
+  };
+
+  const mutationChain = buildMutationChain(node);
   return (
     <aside className="w-[550px] glass-intense border-l border-border/50 flex flex-col animate-slide-in">
       {/* Header */}
@@ -92,20 +124,77 @@ const NodeDetailsPanel = memo(({ node, onClose }: NodeDetailsPanelProps) => {
             )}
           </div>
 
-          {/* Parents */}
-          {node.parent_ids.length > 0 && (
-            <div className="space-y-2">
+          {/* Mutation Tree */}
+          {mutationChain.length > 1 && (
+            <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-primary" />
-                Parent Nodes
+                <GitBranch className="w-4 h-4 text-primary" />
+                Mutation Chain ({mutationChain.length} generations)
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {node.parent_ids.map((parentId) => (
-                  <Badge key={parentId} variant="secondary" className="glass">
-                    {parentId.slice(0, 8)}...
-                  </Badge>
+              <div className="space-y-3">
+                {mutationChain.map((entry, index) => (
+                  <div key={entry.node.node_id} className="flex items-center gap-3">
+                    {/* Generation indicator */}
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                      <span className="text-xs font-medium text-primary">{index + 1}</span>
+                    </div>
+                    
+                    {/* Node info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <button
+                          onClick={() => onNodeSelect?.(entry.node)}
+                          className="text-sm font-medium text-foreground hover:text-primary transition-colors truncate"
+                          title={`Click to select ${entry.node.node_id}`}
+                        >
+                          {entry.node.node_id.slice(0, 12)}...
+                        </button>
+                        <Badge 
+                          variant={entry.node.success ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {entry.node.success ? "Success" : "Failed"}
+                        </Badge>
+                      </div>
+                      
+                      {/* Mutation applied */}
+                      {entry.mutationStyle && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Zap className="w-3 h-3" />
+                          <span>Style: {entry.mutationStyle}</span>
+                          {entry.node.metadata?.parent_fitness && (
+                            <span className="ml-2">
+                              Parent fitness: {(entry.node.metadata.parent_fitness * 100).toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Arrow to next */}
+                    {index < mutationChain.length - 1 && (
+                      <ArrowRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    )}
+                  </div>
                 ))}
               </div>
+              
+              {/* Current mutation info */}
+              {node.attack_style && (
+                <div className="mt-3 p-3 glass rounded-lg">
+                  <div className="text-xs text-muted-foreground mb-1">Current Mutation</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {node.attack_style}
+                    </Badge>
+                    {node.generation >= 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        Generation {node.generation + 1}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

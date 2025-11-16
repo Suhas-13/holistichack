@@ -7,6 +7,7 @@ import os
 import json
 import asyncio
 import logging
+import time
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass
@@ -194,6 +195,59 @@ class DolphinVsGPTSystem:
         logger.info(f"Defender: {self.defender_client}")
         logger.info(f"Evaluator: {self.evaluator_client}")
         logger.info("=" * 50)
+        
+        # Initialize all attack style clusters
+        self._initialize_style_clusters()
+    
+    def _initialize_style_clusters(self):
+        """Pre-initialize clusters for all attack styles to ensure mutations go to correct clusters"""
+        all_styles = [
+            AttackStyle.SLANG, 
+            AttackStyle.MULTITURN,
+            AttackStyle.PYTHON_CODE,
+            AttackStyle.ROLE_PLAY, 
+            AttackStyle.HYPOTHETICALS,
+            AttackStyle.AUTHORITY_MANIPULATION,
+            AttackStyle.EMOTIONAL_MANIPULATION,
+            AttackStyle.TECHNICAL_TERMS,
+            AttackStyle.HIDDEN_SCRATCH_PAD,
+            AttackStyle.MISSPELLINGS,
+            AttackStyle.WORD_PLAY,
+            AttackStyle.HISTORICAL_SCENARIO,
+            AttackStyle.UNCOMMON_DIALECTS,
+            AttackStyle.PHILOSOPHY,
+            AttackStyle.TRUE_PURPOSE
+        ]
+        
+        for style in all_styles:
+            cluster_id = f"cluster_{style.value.lower().replace(' ', '_')}"
+            if cluster_id not in self.cluster_manager.clusters:
+                self.cluster_manager.cluster_metadata[cluster_id] = {
+                    "created_at": time.time(),
+                    "primary_style": style,
+                    "primary_category": None,
+                    "is_style_cluster": True
+                }
+                # Initialize empty cluster
+                self.cluster_manager.clusters[cluster_id] = []
+        
+        logger.info(f"Initialized {len(all_styles)} style clusters. Total clusters: {len(self.cluster_manager.clusters)}")
+    
+    def _log_cluster_distribution(self):
+        """Log detailed information about cluster distribution"""
+        logger.info("=== Cluster Distribution ===")
+        non_empty_clusters = 0
+        for cluster_id, nodes in self.cluster_manager.clusters.items():
+            if nodes:
+                non_empty_clusters += 1
+                attack_styles = [n.attack_style.value if n.attack_style else "None" for n in nodes]
+                style_counts = {}
+                for style in attack_styles:
+                    style_counts[style] = style_counts.get(style, 0) + 1
+                logger.info(f"  {cluster_id}: {len(nodes)} nodes - Styles: {style_counts}")
+        
+        logger.info(f"Total clusters: {len(self.cluster_manager.clusters)} (Non-empty: {non_empty_clusters})")
+        logger.info("===========================")
     
     async def initialize_seed_attacks(self) -> List[AttackNode]:
         """Initialize with seed attacks from known techniques"""
@@ -323,7 +377,28 @@ class DolphinVsGPTSystem:
                 logger.info(f"   Judge Score: {score * 9 + 1:.1f}/10")
             
             # Add to cluster
-            self.cluster_manager.add_node(node)
+            logger.info(f"Processing {node.id}: attack_style={node.attack_style.value if node.attack_style else None}, pre-assigned cluster_id={node.cluster_id}")
+            
+            if node.cluster_id:
+                # Use pre-assigned cluster (e.g., for mutations based on attack style)
+                logger.info(f"Using pre-assigned cluster {node.cluster_id} for {node.id}")
+                self.cluster_manager.add_node_to_specific_cluster(node, node.cluster_id)
+                logger.info(f"Added node {node.id} to pre-assigned cluster {node.cluster_id}")
+            else:
+                # Normal clustering based on similarity
+                logger.info(f"No pre-assigned cluster for {node.id}, using similarity-based clustering")
+                assigned_cluster = self.cluster_manager.add_node(node)
+                logger.info(f"Added node {node.id} to cluster {assigned_cluster} based on similarity")
+            
+            # Verify cluster assignment
+            if node.cluster_id:
+                actual_cluster = None
+                for cid, cnodes in self.cluster_manager.clusters.items():
+                    if any(n.id == node.id for n in cnodes):
+                        actual_cluster = cid
+                        break
+                if actual_cluster != node.cluster_id:
+                    logger.warning(f"CLUSTER MISMATCH: {node.id} expected in {node.cluster_id} but found in {actual_cluster}")
             
         except Exception as e:
             logger.error(f"Attack execution error: {e}")
@@ -378,6 +453,14 @@ class DolphinVsGPTSystem:
                 attack_style=attack_style,
                 generation=parent.generation + 1
             )
+            
+            # Assign to cluster based on attack style
+            mutation.cluster_id = f"cluster_{attack_style.value.lower().replace(' ', '_')}"
+            
+            # Log parent's cluster for debugging
+            parent_cluster = parent.cluster_id if parent.cluster_id else "unknown"
+            logger.info(f"Created mutation {mutation.id} from parent {parent.id} (cluster: {parent_cluster}) with style {attack_style.value} assigned to NEW cluster {mutation.cluster_id}")
+            
             mutations.append(mutation)
         
         return mutations
@@ -452,6 +535,9 @@ class DolphinVsGPTSystem:
             # Report generation statistics
             success_rate = len([a for a in new_population if a.success]) / len(new_population) if new_population else 0
             logger.info(f"Generation {self.generation_counter}: {len(new_population)} attacks, {success_rate:.2%} success rate")
+            
+            # Log cluster information
+            self._log_cluster_distribution()
             
             # Stream generation results to file if enabled
             if SAVE_JSON_FILES:

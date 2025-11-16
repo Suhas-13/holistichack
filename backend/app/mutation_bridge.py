@@ -21,6 +21,12 @@ mutations_path = os.path.abspath(os.path.join(
 if mutations_path not in sys.path:
     sys.path.insert(0, mutations_path)
 
+# Add insurance_agent directory to path
+insurance_agent_path = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..', 'insurance_agent'))
+if insurance_agent_path not in sys.path:
+    sys.path.insert(0, insurance_agent_path)
+
 try:
     from mutation_attack_system import (
         AttackNode as MutationAttackNode,
@@ -64,6 +70,9 @@ class MutationSystemBridge:
         self.evaluator = LLMJudgeEvaluator(model_id="anthropic/claude-haiku-4.5", user_defined_goals=attack_goals)
         self.cluster_manager = ClusterManager()
 
+        # Initialize all attack style clusters upfront
+        self._initialize_all_style_clusters()
+
         # Initialize attacker client (OpenRouter with Qwen)
         self.attacker_client = OpenRouterClient(model_id=attacker_model)
 
@@ -84,7 +93,7 @@ class MutationSystemBridge:
         self,
         session: AttackSessionState,
         seed_prompts: List[Dict[str, Any]],
-        batch_size: int = 20
+        batch_size: int = 10
     ) -> List[AttackNode]:
         """
         Execute seed attacks using the mutation system in parallel batches.
@@ -120,9 +129,11 @@ class MutationSystemBridge:
                 )
                 tasks.append(task)
             
-            # Execute batch in parallel
-            batch_results = await asyncio.gather(*tasks)
-            results.extend([r for r in batch_results if r is not None])
+            # Execute batch in parallel but process results as they complete
+            for completed_task in asyncio.as_completed(tasks):
+                result = await completed_task
+                if result is not None:
+                    results.append(result)
             
         return results
     
@@ -177,7 +188,8 @@ class MutationSystemBridge:
                 parent_ids=backend_node.parent_ids,
                 attack_type=backend_node.attack_type,
                 status="running",
-                assigned_goal=assigned_goal
+                assigned_goal=assigned_goal,
+                generation=backend_node.generation
             )
 
             # Small delay to ensure frontend processes node_add before execution
@@ -202,7 +214,7 @@ class MutationSystemBridge:
         session: AttackSessionState,
         parent_nodes: List[AttackNode],
         num_mutations: int = 5,
-        batch_size: int = 20
+        batch_size: int = 10
     ) -> List[AttackNode]:
         """
         Evolve attacks using mutations from parent nodes in parallel batches.
@@ -244,9 +256,11 @@ class MutationSystemBridge:
                 )
                 tasks.append(task)
             
-            # Execute batch in parallel
-            batch_results = await asyncio.gather(*tasks)
-            results.extend([r for r in batch_results if r is not None])
+            # Execute batch in parallel but process results as they complete
+            for completed_task in asyncio.as_completed(tasks):
+                result = await completed_task
+                if result is not None:
+                    results.append(result)
             
         return results
     
@@ -300,10 +314,26 @@ class MutationSystemBridge:
                 generation=new_generation
             )
 
-            # Use parent's cluster ID and goal
-            cluster_id = parent.cluster_id
+            # Get parent's goal for inheritance
             parent_goal = parent.assigned_goal
-            self.cluster_manager.add_node(mutation_node)
+
+            # Assign to cluster based on mutation style, not parent's cluster
+            mutation_cluster_id = f"cluster_{mutation_style.value.lower().replace(' ', '_')}"
+
+            # Add to cluster manager with specific cluster
+            mutation_node.cluster_id = mutation_cluster_id
+            self.cluster_manager.add_node_to_specific_cluster(mutation_node, mutation_cluster_id)
+
+            cluster_id = mutation_cluster_id
+
+            # Add mutation history metadata
+            mutation_node.metadata = mutation_node.metadata or {}
+            mutation_node.metadata.update({
+                'mutation_style': mutation_style.value,
+                'parent_style': parent.attack_style if parent.attack_style else 'Unknown',
+                'mutation_generation': new_generation,
+                'parent_fitness': parent.fitness_score
+            })
 
             # Convert to backend node (inherit goal from parent)
             backend_node = self._mutation_to_backend_node(
@@ -318,7 +348,8 @@ class MutationSystemBridge:
                 parent_ids=backend_node.parent_ids,
                 attack_type=backend_node.attack_type,
                 status="running",
-                assigned_goal=parent_goal
+                assigned_goal=parent_goal,
+                generation=backend_node.generation
             )
             
             # Small delay to ensure frontend processes node_add before execution
@@ -413,6 +444,7 @@ class MutationSystemBridge:
                 "llm_summary": backend_node.llm_summary,
                 "initial_prompt": backend_node.initial_prompt,
                 "response": backend_node.response,
+                "generation": backend_node.generation,
                 "full_transcript": [
                     {
                         "role": turn.role,
@@ -523,6 +555,15 @@ class MutationSystemBridge:
         if target_endpoint in holistic_agents:
             # Use Holistic AI client for known agents
             return HolisticAgentClient(agent_name=target_endpoint)
+        elif target_endpoint.startswith("http://") or target_endpoint.startswith("https://"):
+            # Custom HTTP endpoint (like http://localhost:5001/api/insurance)
+            try:
+                from custom_client import CustomEndpointClient
+                agent_name = target_endpoint.split('/')[-1]  # Extract last part as name
+                return CustomEndpointClient(endpoint_url=target_endpoint, agent_name=agent_name)
+            except ImportError:
+                logger.error("Could not import CustomEndpointClient. Make sure insurance_agent is in Python path.")
+                raise
         else:
             # Use OpenRouter for custom models (they contain "/" like "x-ai/grok-4-fast")
             return OpenRouterClient(model_id=target_endpoint)
@@ -629,3 +670,42 @@ class MutationSystemBridge:
             "successful_attacks": successful_attacks,
             "all_attacks": all_attacks
         }
+    
+    def _initialize_all_style_clusters(self):
+        """Initialize all attack style clusters upfront to ensure consistent naming"""
+        import time
+        
+        # All available attack styles
+        all_styles = [
+            AttackStyle.SLANG,
+            AttackStyle.TECHNICAL_TERMS,
+            AttackStyle.ROLE_PLAY,
+            AttackStyle.AUTHORITY_MANIPULATION,
+            AttackStyle.MISSPELLINGS,
+            AttackStyle.WORD_PLAY,
+            AttackStyle.EMOTIONAL_MANIPULATION,
+            AttackStyle.HYPOTHETICALS,
+            AttackStyle.HISTORICAL_SCENARIO,
+            AttackStyle.UNCOMMON_DIALECTS,
+            AttackStyle.MULTITURN,
+            AttackStyle.PYTHON_CODE,
+            AttackStyle.HIDDEN_SCRATCH_PAD,
+            AttackStyle.PHILOSOPHY,
+            AttackStyle.TRUE_PURPOSE
+        ]
+        
+        # Initialize a cluster for each style
+        for style in all_styles:
+            cluster_id = f"cluster_{style.value.lower().replace(' ', '_')}"
+            if cluster_id not in self.cluster_manager.clusters:
+                self.cluster_manager.cluster_metadata[cluster_id] = {
+                    "created_at": time.time(),
+                    "primary_style": style,
+                    "primary_category": None,
+                    "is_style_cluster": True
+                }
+                # Initialize empty cluster
+                self.cluster_manager.clusters[cluster_id] = []
+                logger.info(f"Initialized cluster: {cluster_id}")
+        
+        logger.info(f"Initialized {len(all_styles)} style clusters. Total clusters: {len(self.cluster_manager.clusters)}")

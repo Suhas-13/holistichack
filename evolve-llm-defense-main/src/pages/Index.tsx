@@ -265,7 +265,7 @@ const Index = () => {
         success: false,
         fitness_score: 0,
         llama_guard_score: 0,
-        generation: 0,
+        generation: (payload as any).generation || 0, // Use generation from payload
         metadata: {},
         created_at: new Date().toISOString(),
         cost_usd: 0,
@@ -364,6 +364,7 @@ const Index = () => {
             assigned_goal: payload.assigned_goal || existingNode.assigned_goal,
             success: payload.status === "success",
             completed_at: new Date().toISOString(),
+            generation: payload.generation !== undefined ? payload.generation : existingNode.generation,
             // Add the raw judge score for color determination
             judgeScore: judgeScore,
           });
@@ -611,6 +612,7 @@ const Index = () => {
           <EvolutionCanvas
             clusters={clustersWithNodes}
             onNodeSelect={handleNodeSelect}
+            selectedNode={selectedNode}
             isRunning={isRunning}
           />
 
@@ -655,7 +657,9 @@ const Index = () => {
         ) : selectedNode ? (
           <NodeDetailsPanel
             node={selectedNode}
+            allClusters={clusters}
             onClose={() => setSelectedNode(null)}
+            onNodeSelect={setSelectedNode}
           />
         ) : null}
       </div>

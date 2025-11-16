@@ -177,7 +177,8 @@ class AttackOrchestrator:
         
         # Create clusters for each attack style
         for attack_style in all_styles:
-            cluster_id = str(uuid4())
+            # Use consistent naming with mutation_bridge
+            cluster_id = f"cluster_{attack_style.value.lower().replace(' ', '_')}"
             
             # Create cluster
             cluster = Cluster(

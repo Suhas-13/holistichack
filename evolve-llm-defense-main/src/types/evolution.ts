@@ -91,6 +91,7 @@ export interface NodeAddPayload {
   attack_type: string;
   status: string;
   assigned_goal?: StructuredAttackGoal | null;
+  generation?: number;
 }
 
 export interface NodeUpdatePayload {
@@ -103,6 +104,7 @@ export interface NodeUpdatePayload {
   full_transcript: TranscriptTurn[];
   full_trace?: AttackTrace | null;
   assigned_goal?: StructuredAttackGoal | null;
+  generation?: number;
 }
 
 export interface EvolutionLinkAddPayload {
