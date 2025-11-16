@@ -374,6 +374,8 @@ class MutationSystemBridge:
                     "status": backend_node.status,
                     "model_id": f"defender:holistic:agent",
                     "llm_summary": backend_node.llm_summary,
+                    "initial_prompt": backend_node.initial_prompt,
+                    "response": backend_node.response,
                     "full_transcript": [
                         {
                             "role": turn.role,

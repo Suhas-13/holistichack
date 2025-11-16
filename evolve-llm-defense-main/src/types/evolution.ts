@@ -90,6 +90,8 @@ export interface NodeUpdatePayload {
   status: string;
   model_id?: string | null;
   llm_summary?: string | null;
+  initial_prompt?: string;
+  response?: string | null;
   full_transcript: TranscriptTurn[];
   full_trace?: AttackTrace | null;
 }
