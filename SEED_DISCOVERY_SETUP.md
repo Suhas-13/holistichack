@@ -72,6 +72,20 @@ Follow the interactive prompts to schedule periodic discovery runs.
 
 ✅ **Audit trail**: Timestamped logs and reports for every discovery run
 
+## DeepSearch Enhancements (v2.0)
+
+🔬 **59 Optimized Queries** across 9 strategic tiers (academic, techniques, models, exploits)
+
+📚 **Academic Sources**: arXiv, PubMed, Wiley journals + web sources
+
+📅 **Date Filtering**: Focus on 2023-2025 papers for cutting-edge techniques
+
+🎯 **Quality Threshold**: 0.6 relevance score + metadata extraction (citations, authors)
+
+🤖 **Advanced LLM**: Llama-3.1-70B for high-quality seed synthesis
+
+See `mutations/QUERY_STRATEGY.md` for complete query breakdown
+
 ## File Structure
 
 ```
@@ -119,12 +133,12 @@ See `integration_example.py` for a complete example that:
 python3 integration_example.py
 ```
 
-## Cost Estimate
+## Cost Estimate (DeepSearch Enhanced)
 
-- **Valyu API**: ~$0.05-0.15 per discovery run (75 total queries)
-- **Together AI**: ~$0.02-0.05 per discovery run
-- **Total**: ~$0.10-0.20 per run
-- **Free tier**: $10 Valyu credits = ~50-100 discovery runs
+- **Valyu DeepSearch**: ~$0.75-1.50 per run (59 optimized queries × 5 results)
+- **Together AI (70B)**: ~$0.30-0.60 per run (better synthesis quality)
+- **Total**: ~$1.00-2.50 per discovery run
+- **Your budget**: $30 = 12-30 full discovery runs with high-quality results
 
 ## Troubleshooting
 
