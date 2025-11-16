@@ -358,7 +358,8 @@ class MutationSystemBridge:
                 verification_response_raw=f"Score: {score}, Unsafe: {is_unsafe}",
                 judgement="success" if is_unsafe else "failure",
                 verification_metadata={
-                    "llm_judge_score": score,  # Claude Haiku judge score
+                    "llm_judge_score": score,  # Claude Haiku judge score (normalized 0-1)
+                    "raw_judge_score": int(score * 9 + 1),  # Convert back to raw 1-10 scale
                     "violated_categories": categories
                 }
             )

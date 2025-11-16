@@ -292,6 +292,27 @@ class AttackOrchestrator:
                 cluster_nodes[node.cluster_id].append(node)
             
             for cluster_id, nodes in cluster_nodes.items():
+                # Check if this cluster exists in session, if not create and broadcast it
+                if cluster_id not in session.clusters:
+                    # Create missing cluster based on the best node's attack style
+                    best_node = max(nodes, key=lambda n: n.fitness_score)
+                    cluster_name = best_node.attack_style or "Unknown Style"
+                    
+                    cluster = Cluster(
+                        cluster_id=cluster_id,
+                        name=cluster_name,
+                        description=f"Attacks using {cluster_name} style"
+                    )
+                    session.add_cluster(cluster)
+                    
+                    # Broadcast the missing cluster
+                    await self.connection_manager.broadcast_cluster_add(
+                        attack_id=session.attack_id,
+                        cluster_id=cluster.cluster_id,
+                        name=cluster.name
+                    )
+                    logger.info(f"Created and broadcast missing cluster: {cluster_name}")
+                
                 best_in_cluster = max(nodes, key=lambda n: n.fitness_score)
                 if best_in_cluster.node_id not in selected_node_ids:
                     selected_nodes.append(best_in_cluster)

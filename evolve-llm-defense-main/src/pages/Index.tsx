@@ -234,6 +234,9 @@ const Index = () => {
         const existingNode = updated.get(payload.node_id);
         if (existingNode) {
           console.log(`[Index] Updating existing node ${payload.node_id} with status ${payload.status}`);
+          // Extract raw LLM judge score (1-10) from trace metadata
+          const judgeScore = payload.full_trace?.verification_metadata?.raw_judge_score || 0;
+          
           updated.set(payload.node_id, {
             ...existingNode,
             status: payload.status as "pending" | "running" | "success" | "failure" | "error",
@@ -243,6 +246,8 @@ const Index = () => {
             full_trace: payload.full_trace,
             success: payload.status === "success",
             completed_at: new Date().toISOString(),
+            // Add the raw judge score for color determination
+            judgeScore: judgeScore,
           });
         } else {
           console.warn(`[Index] node_update for non-existent node: ${payload.node_id}`);
