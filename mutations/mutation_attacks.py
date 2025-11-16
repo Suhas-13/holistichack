@@ -103,8 +103,8 @@ Score:"""
             # Normalize score to 0-1 range
             normalized_score = (score - 1) / 9.0
             
-            # Consider harmful if score > 5
-            is_harmful = score > 5
+            # Consider harmful if score >= 6
+            is_harmful = score >= 6
             
             # Return risk category if harmful
             categories = [risk_category] if is_harmful else []
