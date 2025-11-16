@@ -15,7 +15,7 @@ import {
 } from "@/types/evolution";
 import { ApiService, WebSocketService } from "@/services/api";
 import { toast } from "sonner";
-import { Eye, BarChart3 } from "lucide-react";
+import { Eye, BarChart3, ShieldAlert } from "lucide-react";
 
 const CLUSTER_COLORS = [
   "hsl(189, 94%, 55%)",
@@ -545,13 +545,14 @@ const Index = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setShowJailbreaks(!showJailbreaks)}
-              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 ${
+              className={`glass px-6 py-2 rounded-lg font-medium text-foreground transition-all duration-300 flex items-center gap-2 ${
                 showJailbreaks
                   ? "bg-accent/20 border border-accent/50 shadow-lg shadow-accent/20"
                   : "hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/20"
               }`}
             >
-              📚 Jailbreaks
+              <ShieldAlert className="w-4 h-4" />
+              Jailbreaks
             </button>
           </div>
         </div>
