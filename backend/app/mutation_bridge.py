@@ -85,8 +85,7 @@ class MutationSystemBridge:
             List of completed AttackNode objects
         """
         results = []
-        defender_client = HolisticAgentClient(
-            self._extract_agent_name(session.target_endpoint))
+        defender_client = self._create_defender_client(session.target_endpoint)
         
         # Process seeds in parallel batches
         for batch_start in range(0, len(seed_prompts), batch_size):
@@ -201,8 +200,7 @@ class MutationSystemBridge:
             List of evolved AttackNode objects
         """
         results = []
-        defender_client = HolisticAgentClient(
-            self._extract_agent_name(session.target_endpoint))
+        defender_client = self._create_defender_client(session.target_endpoint)
 
         # Get generation number
         max_generation = max(
@@ -464,6 +462,18 @@ class MutationSystemBridge:
             metadata=backend_node.metadata
         )
 
+    def _create_defender_client(self, target_endpoint: str):
+        """Create appropriate defender client based on target endpoint"""
+        # List of known Holistic AI agents
+        holistic_agents = ["elephant", "fox", "eagle", "ant", "wolf", "bear", "chameleon"]
+        
+        if target_endpoint in holistic_agents:
+            # Use Holistic AI client for known agents
+            return HolisticAgentClient(agent_name=target_endpoint)
+        else:
+            # Use OpenRouter for custom models (they contain "/" like "x-ai/grok-4-fast")
+            return OpenRouterClient(model_id=target_endpoint)
+    
     def _extract_agent_name(self, endpoint: str) -> str:
         """Extract agent name from endpoint URL"""
         # Extract from: https://.../prod/api/bear -> bear
