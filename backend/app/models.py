@@ -11,6 +11,13 @@ from pydantic import BaseModel, Field
 # Attack Configuration Models
 # ============================================================================
 
+class StructuredAttackGoal(BaseModel):
+    """A structured attack goal with label and description"""
+    goal_id: str = Field(..., description="Unique identifier for this goal")
+    label: str = Field(..., description="Short label (2-4 words)")
+    description: str = Field(..., description="Full goal description")
+
+
 class StartAttackRequest(BaseModel):
     """Request body for POST /api/v1/start-attack"""
     target_endpoint: str = Field(...,
@@ -18,6 +25,10 @@ class StartAttackRequest(BaseModel):
     attack_goals: List[str] = Field(
         default_factory=list,
         description="Optional attack goals like 'reveal_system_prompt', 'generate_harmful_content'"
+    )
+    structured_goals: Optional[List[StructuredAttackGoal]] = Field(
+        None,
+        description="Structured attack goals with labels (preferred over attack_goals)"
     )
     seed_attack_count: int = Field(
         default=20, ge=1, le=50, description="Number of seed attacks to start with")
@@ -65,6 +76,11 @@ class AttackNode(BaseModel):
                              description="Type of attack (e.g., 'Seed_Jailbreak_DAN')")
     status: Literal["pending", "running",
                     "success", "failure", "error"] = "pending"
+
+    # Attack goal assignment
+    assigned_goal: Optional[StructuredAttackGoal] = Field(
+        None, description="The specific attack goal this node is targeting"
+    )
 
     # Attack details
     initial_prompt: str = Field(..., description="The attack prompt")
@@ -145,6 +161,7 @@ class NodeAddPayload(BaseModel):
     parent_ids: List[str]
     attack_type: str
     status: str
+    assigned_goal: Optional[StructuredAttackGoal] = None
 
 
 class NodeUpdatePayload(BaseModel):
@@ -155,6 +172,7 @@ class NodeUpdatePayload(BaseModel):
     llm_summary: Optional[str] = None
     full_transcript: List[TranscriptTurn]
     full_trace: Optional[AttackTrace] = None
+    assigned_goal: Optional[StructuredAttackGoal] = None
 
 
 class EvolutionLinkAddPayload(BaseModel):

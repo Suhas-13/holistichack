@@ -94,17 +94,27 @@ class ConnectionManager:
         )
         await self.broadcast_event(attack_id, event)
 
-    async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str):
+    async def broadcast_node_add(self, attack_id: str, node_id: str, cluster_id: str, parent_ids: list, attack_type: str, status: str, assigned_goal=None):
         """Convenience method for node_add events"""
+        data = {
+            "node_id": node_id,
+            "cluster_id": cluster_id,
+            "parent_ids": parent_ids,
+            "attack_type": attack_type,
+            "status": status
+        }
+        if assigned_goal:
+            # Convert to dict if it's a model object
+            if hasattr(assigned_goal, 'model_dump'):
+                data["assigned_goal"] = assigned_goal.model_dump()
+            elif hasattr(assigned_goal, 'dict'):
+                data["assigned_goal"] = assigned_goal.dict()
+            else:
+                data["assigned_goal"] = assigned_goal
+
         event = WebSocketEvent(
             type="node_add",
-            data={
-                "node_id": node_id,
-                "cluster_id": cluster_id,
-                "parent_ids": parent_ids,
-                "attack_type": attack_type,
-                "status": status
-            }
+            data=data
         )
         await self.broadcast_event(attack_id, event)
 

@@ -13,7 +13,8 @@ from app.models import (
     AttackResults,
     AttackMetrics,
     AttackAnalysis,
-    SuccessfulAttackTrace
+    SuccessfulAttackTrace,
+    StructuredAttackGoal
 )
 import logging
 
@@ -23,10 +24,17 @@ logger = logging.getLogger(__name__)
 class AttackSessionState:
     """State for a single attack session"""
 
-    def __init__(self, attack_id: str, target_endpoint: str, attack_goals: List[str]):
+    def __init__(
+        self,
+        attack_id: str,
+        target_endpoint: str,
+        attack_goals: List[str],
+        structured_goals: Optional[List[StructuredAttackGoal]] = None
+    ):
         self.attack_id = attack_id
         self.target_endpoint = target_endpoint
         self.attack_goals = attack_goals
+        self.structured_goals = structured_goals or []
         self.status = "running"
         self.should_stop = False
 
@@ -105,12 +113,13 @@ class StateManager:
         self,
         attack_id: str,
         target_endpoint: str,
-        attack_goals: List[str]
+        attack_goals: List[str],
+        structured_goals: Optional[List[StructuredAttackGoal]] = None
     ) -> AttackSessionState:
         """Create a new attack session"""
         async with self._lock:
             session = AttackSessionState(
-                attack_id, target_endpoint, attack_goals)
+                attack_id, target_endpoint, attack_goals, structured_goals)
             self.sessions[attack_id] = session
             logger.info(f"Created session {attack_id}")
             return session

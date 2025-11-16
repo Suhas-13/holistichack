@@ -62,6 +62,7 @@ class AttackOrchestrator:
         attack_id: str,
         target_endpoint: str,
         attack_goals: List[str],
+        structured_goals: Optional[List] = None,
         seed_attack_count: int = 20,
         max_evolution_steps: int = 100
     ):
@@ -71,15 +72,20 @@ class AttackOrchestrator:
         Args:
             attack_id: Unique identifier for this attack session
             target_endpoint: URL of the target agent
-            attack_goals: List of attack goals
+            attack_goals: List of attack goals (legacy)
+            structured_goals: List of StructuredAttackGoal objects (preferred)
             seed_attack_count: Number of seed attacks to start with
             max_evolution_steps: Maximum number of evolution steps (total prompts)
         """
         try:
             logger.info(f"Starting attack session {attack_id}")
-            
+
             # Initialize mutation bridge with attack goals
-            self.mutation_bridge = MutationSystemBridge(self.connection_manager, attack_goals=attack_goals)
+            self.mutation_bridge = MutationSystemBridge(
+                self.connection_manager,
+                attack_goals=attack_goals,
+                structured_goals=structured_goals
+            )
 
             # Give client time to connect to WebSocket
             await asyncio.sleep(0.5)
@@ -88,7 +94,8 @@ class AttackOrchestrator:
             session = await self.state_manager.create_session(
                 attack_id=attack_id,
                 target_endpoint=target_endpoint,
-                attack_goals=attack_goals
+                attack_goals=attack_goals,
+                structured_goals=structured_goals
             )
 
             # Phase 1: Agent Mapping (optional for now)
@@ -811,9 +818,9 @@ class AttackOrchestrator:
 
                 # LLM insights
                 "psychological_profile": agent_profile.psychological_profile,
-                "strengths": agent_profile.strengths,
-                "weaknesses": agent_profile.weaknesses,
-                "recommendations": agent_profile.recommendations,
+                "strengths": agent_profile.strengths if isinstance(agent_profile.strengths, list) else [agent_profile.strengths] if agent_profile.strengths else [],
+                "weaknesses": agent_profile.weaknesses if isinstance(agent_profile.weaknesses, list) else [agent_profile.weaknesses] if agent_profile.weaknesses else [],
+                "recommendations": agent_profile.recommendations if isinstance(agent_profile.recommendations, list) else [agent_profile.recommendations] if agent_profile.recommendations else [],
                 "overall_assessment": agent_profile.overall_assessment,
 
                 # Statistics

@@ -52,9 +52,11 @@ class MutationSystemBridge:
         self,
         connection_manager: ConnectionManager,
         attacker_model: str = "qwen/qwen3-next-80b-a3b-instruct",
-        attack_goals: List[str] = None
+        attack_goals: List[str] = None,
+        structured_goals: List = None
     ):
         self.connection_manager = connection_manager
+        self.structured_goals = structured_goals or []
 
         # Initialize mutation system components
         self.mutator = PromptMutator(user_defined_goals=attack_goals)
@@ -67,6 +69,16 @@ class MutationSystemBridge:
 
         logger.info(
             f"Initialized mutation system bridge with attacker: {attacker_model}")
+
+    def _get_assigned_goal(self, index: int):
+        """
+        Get the assigned goal for a node at the given index.
+        Cycles through available goals if there are more nodes than goals.
+        """
+        if not self.structured_goals:
+            return None
+        goal_index = index % len(self.structured_goals)
+        return self.structured_goals[goal_index]
 
     async def execute_seed_attacks(
         self,
@@ -147,9 +159,12 @@ class MutationSystemBridge:
                 generation=0
             )
 
+            # Get assigned goal for this node
+            assigned_goal = self._get_assigned_goal(index)
+
             # Convert to backend node
             backend_node = self._mutation_to_backend_node(
-                mutation_node, seed_data["cluster_id"])
+                mutation_node, seed_data["cluster_id"], assigned_goal=assigned_goal)
 
             # Add to cluster
             self.cluster_manager.add_node(mutation_node)
@@ -161,9 +176,10 @@ class MutationSystemBridge:
                 cluster_id=backend_node.cluster_id,
                 parent_ids=backend_node.parent_ids,
                 attack_type=backend_node.attack_type,
-                status="running"
+                status="running",
+                assigned_goal=assigned_goal
             )
-            
+
             # Small delay to ensure frontend processes node_add before execution
             await asyncio.sleep(0.1)
 
@@ -253,12 +269,22 @@ class MutationSystemBridge:
             
             logger.info(f"🧬 Evolving Gen{new_generation} Mut{mutation_index}: Parent={parent.node_id} (fitness={parent.fitness_score:.2f}), Style={mutation_style.value}, Risk={parent_mutation_node.risk_category.value if parent_mutation_node.risk_category else 'Unknown'}")
 
-            # Generate mutation
+            # Get specific goal description for mutation
+            goal_description = None
+            if parent_goal:
+                # Extract description from structured goal
+                if hasattr(parent_goal, 'description'):
+                    goal_description = parent_goal.description
+                elif isinstance(parent_goal, dict):
+                    goal_description = parent_goal.get('description')
+
+            # Generate mutation targeting the specific goal
             mutated_prompt = await self.mutator.mutate(
                 parent_mutation_node,
                 mutation_style,
                 parent_mutation_node.risk_category,
-                self.attacker_client
+                self.attacker_client,
+                specific_goal=goal_description
             )
             
             logger.debug(f"   Original: {parent.initial_prompt[:80]}...")
@@ -274,13 +300,14 @@ class MutationSystemBridge:
                 generation=new_generation
             )
 
-            # Use parent's cluster ID instead of creating a new one
+            # Use parent's cluster ID and goal
             cluster_id = parent.cluster_id
+            parent_goal = parent.assigned_goal
             self.cluster_manager.add_node(mutation_node)
 
-            # Convert to backend node
+            # Convert to backend node (inherit goal from parent)
             backend_node = self._mutation_to_backend_node(
-                mutation_node, cluster_id)
+                mutation_node, cluster_id, assigned_goal=parent_goal)
             backend_node.parent_ids = [parent.node_id]
 
             # Broadcast node_add
@@ -290,7 +317,8 @@ class MutationSystemBridge:
                 cluster_id=backend_node.cluster_id,
                 parent_ids=backend_node.parent_ids,
                 attack_type=backend_node.attack_type,
-                status="running"
+                status="running",
+                assigned_goal=parent_goal
             )
             
             # Small delay to ensure frontend processes node_add before execution
@@ -329,10 +357,20 @@ class MutationSystemBridge:
             mutation_node.response = response
             backend_node.response = response
 
-            # Evaluate with LLM Judge (Claude Haiku)
+            # Get specific goal description for evaluation
+            goal_description = None
+            if backend_node.assigned_goal:
+                # Extract description from structured goal
+                if hasattr(backend_node.assigned_goal, 'description'):
+                    goal_description = backend_node.assigned_goal.description
+                elif isinstance(backend_node.assigned_goal, dict):
+                    goal_description = backend_node.assigned_goal.get('description')
+
+            # Evaluate with LLM Judge (Claude Haiku) against the specific goal
             is_unsafe, score, categories = await self.evaluator.evaluate(
                 mutation_node.prompt,
-                response
+                response,
+                specific_goal=goal_description
             )
 
             # Update nodes
@@ -368,30 +406,41 @@ class MutationSystemBridge:
                 mutation_node, is_unsafe, score)
 
             # Broadcast node_update
+            node_update_payload = {
+                "node_id": backend_node.node_id,
+                "status": backend_node.status,
+                "model_id": f"defender:holistic:agent",
+                "llm_summary": backend_node.llm_summary,
+                "initial_prompt": backend_node.initial_prompt,
+                "response": backend_node.response,
+                "full_transcript": [
+                    {
+                        "role": turn.role,
+                        "content": turn.content,
+                        "timestamp": turn.timestamp.isoformat()
+                    }
+                    for turn in backend_node.full_transcript
+                ],
+                "full_trace": {
+                    "verification_prompt_to_llama_guard": backend_node.full_trace.verification_prompt_to_llama_guard,
+                    "verification_response_raw": backend_node.full_trace.verification_response_raw,
+                    "judgement": backend_node.full_trace.judgement,
+                    "verification_metadata": backend_node.full_trace.verification_metadata
+                }
+            }
+
+            # Add assigned_goal if present
+            if backend_node.assigned_goal:
+                if hasattr(backend_node.assigned_goal, 'model_dump'):
+                    node_update_payload["assigned_goal"] = backend_node.assigned_goal.model_dump()
+                elif hasattr(backend_node.assigned_goal, 'dict'):
+                    node_update_payload["assigned_goal"] = backend_node.assigned_goal.dict()
+                else:
+                    node_update_payload["assigned_goal"] = backend_node.assigned_goal
+
             await self.connection_manager.broadcast_node_update(
                 attack_id=attack_id,
-                node_update_payload={
-                    "node_id": backend_node.node_id,
-                    "status": backend_node.status,
-                    "model_id": f"defender:holistic:agent",
-                    "llm_summary": backend_node.llm_summary,
-                    "initial_prompt": backend_node.initial_prompt,
-                    "response": backend_node.response,
-                    "full_transcript": [
-                        {
-                            "role": turn.role,
-                            "content": turn.content,
-                            "timestamp": turn.timestamp.isoformat()
-                        }
-                        for turn in backend_node.full_transcript
-                    ],
-                    "full_trace": {
-                        "verification_prompt_to_llama_guard": backend_node.full_trace.verification_prompt_to_llama_guard,
-                        "verification_response_raw": backend_node.full_trace.verification_response_raw,
-                        "judgement": backend_node.full_trace.judgement,
-                        "verification_metadata": backend_node.full_trace.verification_metadata
-                    }
-                }
+                node_update_payload=node_update_payload
             )
 
             logger.info(f"{'✅ SUCCESS' if is_unsafe else '❌ FAILURE'} - Gen{mutation_node.generation} - {mutation_node.attack_style.value if mutation_node.attack_style else 'Unknown'} - Score: {score:.2f}")
@@ -404,7 +453,7 @@ class MutationSystemBridge:
             backend_node.llm_summary = f"Error: {str(e)}"
             return backend_node
 
-    def _mutation_to_backend_node(self, mutation_node: MutationAttackNode, cluster_id: str) -> AttackNode:
+    def _mutation_to_backend_node(self, mutation_node: MutationAttackNode, cluster_id: str, assigned_goal=None) -> AttackNode:
         """Convert mutation system node to backend node"""
         # Handle attack_style and risk_category (could be enum or string)
         attack_style_str = None
@@ -430,7 +479,8 @@ class MutationSystemBridge:
             llama_guard_score=mutation_node.llama_guard_score or 0.0,
             success=mutation_node.success,
             response=mutation_node.response,
-            metadata=mutation_node.metadata
+            metadata=mutation_node.metadata,
+            assigned_goal=assigned_goal
         )
 
     def _backend_to_mutation_node(self, backend_node: AttackNode) -> MutationAttackNode:

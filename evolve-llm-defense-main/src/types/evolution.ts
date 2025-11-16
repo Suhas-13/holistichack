@@ -1,3 +1,9 @@
+export interface StructuredAttackGoal {
+  goal_id: string;
+  label: string;
+  description: string;
+}
+
 export interface TranscriptTurn {
   role: "attacker" | "model";
   content: string;
@@ -17,6 +23,7 @@ export interface AttackNode {
   parent_ids: string[];
   attack_type: string;
   status: "pending" | "running" | "success" | "failure" | "error";
+  assigned_goal?: StructuredAttackGoal | null;
   initial_prompt: string;
   response?: string | null;
   num_turns: number;
@@ -83,6 +90,7 @@ export interface NodeAddPayload {
   parent_ids: string[];
   attack_type: string;
   status: string;
+  assigned_goal?: StructuredAttackGoal | null;
 }
 
 export interface NodeUpdatePayload {
@@ -94,6 +102,7 @@ export interface NodeUpdatePayload {
   response?: string | null;
   full_transcript: TranscriptTurn[];
   full_trace?: AttackTrace | null;
+  assigned_goal?: StructuredAttackGoal | null;
 }
 
 export interface EvolutionLinkAddPayload {

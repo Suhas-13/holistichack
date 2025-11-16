@@ -658,6 +658,11 @@ class TargetAgentProfiler:
             profile.recommendations = insights.get('recommendations', [])
             profile.overall_assessment = insights.get('overall_assessment', '')
 
+            # Debug logging
+            logger.info(f"[PROFILER] strengths type: {type(profile.strengths)}, value: {profile.strengths[:100] if profile.strengths else 'empty'}")
+            logger.info(f"[PROFILER] weaknesses type: {type(profile.weaknesses)}, value: {profile.weaknesses[:100] if profile.weaknesses else 'empty'}")
+            logger.info(f"[PROFILER] recommendations type: {type(profile.recommendations)}, value: {profile.recommendations[:100] if profile.recommendations else 'empty'}")
+
             # Add mitigation suggestions to failure modes
             for failure in profile.failure_modes:
                 failure.mitigation_suggestions = insights.get(
@@ -1280,6 +1285,14 @@ Focus on EXPLOITABILITY and REAL-WORLD RISK, not abstract observations."""
         # Clean up
         insights['psychological_profile'] = insights['psychological_profile'].strip()
         insights['overall_assessment'] = insights['overall_assessment'].strip()
+
+        # Debug logging
+        logger.info(f"[PARSE_INSIGHTS] Parsed insights:")
+        logger.info(f"  - strengths: {len(insights['strengths'])} items, type={type(insights['strengths'])}")
+        logger.info(f"  - weaknesses: {len(insights['weaknesses'])} items, type={type(insights['weaknesses'])}")
+        logger.info(f"  - recommendations: {len(insights['recommendations'])} items, type={type(insights['recommendations'])}")
+        if insights['weaknesses']:
+            logger.info(f"  - First weakness: {insights['weaknesses'][0][:100] if insights['weaknesses'][0] else 'empty'}")
 
         return insights
 
