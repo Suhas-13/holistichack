@@ -72,7 +72,7 @@ const AttackNodeComponent = memo(({ node, onClick }: AttackNodeComponentProps) =
         )}
       </foreignObject>
 
-      {/* Turn count badge */}
+      {/* Generation badge */}
       <circle
         cx={x + 15}
         cy={y - 15}
@@ -87,7 +87,7 @@ const AttackNodeComponent = memo(({ node, onClick }: AttackNodeComponentProps) =
         dominantBaseline="middle"
         className="text-[10px] font-bold fill-primary-foreground"
       >
-        {node.num_turns}
+        {node.generation + 1}
       </text>
     </g>
   );

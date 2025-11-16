@@ -166,7 +166,8 @@ class MutationSystemBridge:
                 cluster_id=backend_node.cluster_id,
                 parent_ids=backend_node.parent_ids,
                 attack_type=backend_node.attack_type,
-                status="running"
+                status="running",
+                generation=backend_node.generation
             )
             
             # Small delay to ensure frontend processes node_add before execution
@@ -290,6 +291,15 @@ class MutationSystemBridge:
             
             cluster_id = mutation_cluster_id
 
+            # Add mutation history metadata
+            mutation_node.metadata = mutation_node.metadata or {}
+            mutation_node.metadata.update({
+                'mutation_style': mutation_style.value,
+                'parent_style': parent.attack_style if parent.attack_style else 'Unknown',
+                'mutation_generation': new_generation,
+                'parent_fitness': parent.fitness_score
+            })
+
             # Convert to backend node
             backend_node = self._mutation_to_backend_node(
                 mutation_node, cluster_id)
@@ -302,7 +312,8 @@ class MutationSystemBridge:
                 cluster_id=backend_node.cluster_id,
                 parent_ids=backend_node.parent_ids,
                 attack_type=backend_node.attack_type,
-                status="running"
+                status="running",
+                generation=backend_node.generation
             )
             
             # Small delay to ensure frontend processes node_add before execution
@@ -389,6 +400,7 @@ class MutationSystemBridge:
                     "llm_summary": backend_node.llm_summary,
                     "initial_prompt": backend_node.initial_prompt,
                     "response": backend_node.response,
+                    "generation": backend_node.generation,
                     "full_transcript": [
                         {
                             "role": turn.role,
